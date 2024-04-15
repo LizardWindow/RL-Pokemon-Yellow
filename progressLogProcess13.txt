@@ -1,0 +1,36 @@
+
+
+---------------------------------------------------------
+---------------------------------------------------------
+Process number = 13
+Exploration Reward Multiplier = 1
+Total Reward all resets = 472
+Total got Pikachu = 5
+Total attacks performed all resets = 45
+
+Reset Number: 1
+
+Best Run? = True
+Total Reward this reset = 472
+Map Progress = 3
+Attacks performed = 45
+Times own Pokemon knocked out = 614
+
+Best run stats:
+
+Best run reset count: 1
+Best run total reward: 472
+Best run map progress: 3
+Best run damaging attacks performed: 45
+Best run self ko total = 614
+
+Highest ever totals:
+
+Highest map Progress: 3
+Occurred at reset: 1
+Highest amount of attacks: 45
+Occurred at reset: 1
+Highest amount self ko: 614
+Occurred at reset: 1
+---------------------------------------------------------
+---------------------------------------------------------
