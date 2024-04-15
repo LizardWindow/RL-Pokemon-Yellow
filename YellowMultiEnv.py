@@ -21,6 +21,7 @@
 #used for index numbers of maps for rewardMapProgress
 
 #import vectorization wrappers
+import torch
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
 # import os for file path management
@@ -30,7 +31,7 @@ from stable_baselines3 import PPO
 #import base callback for saving models
 from stable_baselines3.common.callbacks import BaseCallback
 #import register to register pokemon yellow as a custom gym environment
-from gym.envs.registration import register
+from gymnasium.envs.registration import register, make
 from rl_pokemon_project.envs.YellowBaselinesEnv import YellowEnv
 
 #This method was taken from the red rl repo linked above. This was one of the keys to my multiprocessing problem, mixed with discovering the api compatibility
@@ -47,7 +48,8 @@ def make_env(env_config, rank, seed=0):
     """
 
     def _init():
-        env = YellowEnv(env_config)
+        
+        env = YellowEnv(env_config, rank)
         # use a seed for reproducibility
         # Important: use a different seed for each environment
         # otherwise they would generate the same experiences
@@ -69,20 +71,33 @@ if __name__ == '__main__':
     register(
         id="Yellow-v0",
         entry_point="rl_pokemon_project.envs.YellowBaselinesEnv:YellowEnv",
-        apply_api_compatibility=True
     )
-    
+    fileChoice = 4
+    if fileChoice == 0:
+        stateFile = "CatchingTutorial.gb.state"
+    elif fileChoice == 1:
+        stateFile = "FirstBattle.state"
+    elif fileChoice == 2:
+        stateFile = "LevelingUp.state"
+    elif fileChoice == 3:
+        stateFile = "GotOaksParcel.state"
+    elif fileChoice == 4:
+        stateFile = "StartWithPokeballs.state"
+    else:
+        stateFile = "PokemonYellowVersion.gb.state"
     #setup directories
     ROM_PATH = "PokemonYellowVersion.gb" #File location of Pokemon Yellow
-    INIT_STATE_FILE_PATH = "PokemonYellowVersion.gb.state" #File location of the starting state of the rom
-
+    INIT_STATE_FILE_PATH = stateFile #File location of the starting state of the rom
+    PROGRESS_LOG = './logs/progressLogs/'
+    ep_length = 2048 *10
     #sets up configurations for the environment
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
-        'gb_path': ROM_PATH
+        'gb_path': ROM_PATH, 'max_steps': ep_length,
+        'progressLogs': PROGRESS_LOG
     }
     
-    num_cpu = 4 
+    num_cpu = 32
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
 
@@ -99,22 +114,25 @@ if __name__ == '__main__':
         
         def _on_step(self):
             if self.n_calls % self.check_freq == 0:
-                model_path = os.path.join(self.save_path, 'best_model')
-                #model_path = os.path.join(self.save_path, 'best_model_{}'.format(self.n_calls))
+                #model_path = os.path.join(self.save_path, 'best_model')
+                model_path = os.path.join(self.save_path, 'best_model_{}'.format(self.n_calls))
                 self.model.save(model_path)
                 
             return True
     #setup directories for saving training data
     CHECKPOINT_DIR = './train/'
     LOG_DIR = './logs/'
+    
 
+    ep_length = 2048 *10
     #setup model saving callback
-    callback = TrainAndLoggingCallback(check_freq=10000, save_path=CHECKPOINT_DIR)
-
+    callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
+    
     #create reinforcement learning model
-    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR, learning_rate=0.000001,n_steps=4096)
+    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=128, n_epochs=3, gamma=0.998, learning_rate=0.00001,device="cuda",)
 
-    model.learn(total_timesteps=100000,callback = callback)
+    #model= PPO.load('./train/best_model_ViridianTourist.zip', env=env, device="cuda")
+    model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')
 
 

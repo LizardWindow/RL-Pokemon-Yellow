@@ -136,7 +136,7 @@ rewards = []
 try:
     for i in range(3000):
         random_action = np.random.choice(list(range(len(env.valid_actions))),size=1)[0]
-        observation,reward,terminated,truncated, _ =env.step(random_action)
+        observation,reward,terminated,truncated, _ =env.step(7)
         states.append(observation)
         rewards.append(reward)
         
