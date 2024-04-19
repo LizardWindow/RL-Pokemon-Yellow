@@ -19,7 +19,6 @@ class YellowEnv(Env):
         
         
         
-        
         #Creates an array of valid actions
         self.valid_actions = [
             WindowEvent.PRESS_ARROW_DOWN,
@@ -61,7 +60,7 @@ class YellowEnv(Env):
         #variables needed for reward
         rank +=1
         #self.rewardMultiplier = rank * 0.1
-        self.rewardMultiplier = 1
+        self.rewardMultiplier = 0.1
         self.step_count = 0
         self.exploredMaps = [(0,(0,0))]
         self.revisitedMaps = [(0,(0,0))]
@@ -86,7 +85,7 @@ class YellowEnv(Env):
         self.attacksPerformed = 0
         self.totalAttacksPerformed = 0
         self.knockedOut = 0
-        self.resets = -1
+        self.resets = -2
         self.progressing = 0
         
         
@@ -103,12 +102,33 @@ class YellowEnv(Env):
         self.highestKnockedOut = 0
         self.hkReset = 0
         
+        
+        self.rewardTrackerMapExploration = 0
+        self.rewardTrackerWorldProgression = 0
+        self.rewardTrackerPokemonCaught =0
+        self.rewardTrackerPokemonLevels =0
+        self.rewardTrackerDamageDealt =0
+        self.rewardTrackerDamageReceived =0
+        self.rewardTrackerFlagsReached =0
+        
+        self.fRewardTrackerMapExploration = 0
+        self.fRewardTrackerWorldProgression = 0
+        self.fRewardTrackerPokemonCaught = 0
+        self.fRewardTrackerPokemonLevels = 0
+        self.fRewardTrackerDamageDealt = 0
+        self.fRewardTrackerDamageReceived = 0
+        self.fRewardTrackerFlagsReached = 0
+        
+        
 
 
 
         
         #simple directmedia layer 2, used by pyboy to access graphics/controls/etc
+        
         head='SDL2'
+        if self.rank > 0:
+            head='headless'
         
         #instantiates a pyboy emulator object to run yellow
         self.pyboy = PyBoy(
@@ -128,6 +148,151 @@ class YellowEnv(Env):
         
         self.agent_stats = []
         self.total_reward=np.array(int)
+    
+    
+    
+    
+    
+    
+    def TrackerAdd(self, reward, tracker):
+        if tracker == "ME":
+            self.rewardTrackerMapExploration += reward
+        elif tracker == "WP":
+            self.rewardTrackerWorldProgression += reward
+        elif tracker =="PC":
+            self.rewardTrackerPokemonCaught += reward
+        elif tracker =="PL":
+            self.rewardTrackerPokemonLevels += reward
+        elif tracker =="DD":
+            self.rewardTrackerDamageDealt += reward
+        elif tracker =="DR":
+            self.rewardTrackerDamageReceived += reward
+        elif tracker =="FR":
+            self.rewardTrackerFlagsReached += reward
+    def TrackerReset(self, isFirst = False):
+        if self.resets == 1:
+            self.fRewardTrackerMapExploration = self.rewardTrackerMapExploration
+            self.fRewardTrackerWorldProgression = self.rewardTrackerWorldProgression
+            self.fRewardTrackerPokemonCaught = self.rewardTrackerPokemonCaught
+            self.fRewardTrackerPokemonLevels = self.rewardTrackerPokemonLevels
+            self.fRewardTrackerDamageDealt = self.rewardTrackerDamageDealt
+            self.fRewardTrackerDamageReceived = self.rewardTrackerDamageReceived
+            self.fRewardTrackerFlagsReached = self.rewardTrackerFlagsReached
+            
+        self.totalRewardAllResets += self.totalRewardThisReset
+        self.bestRun = False
+        
+        self.totalAttacksPerformed += self.attacksPerformed
+            
+        if self.totalRewardThisReset > self.bestRunTotalRewardThisReset:
+            self.bestRun = True
+            self.bestRunResets = self.resets
+            self.bestRunTotalRewardThisReset = self.totalRewardThisReset
+            self.bestRunProgressing = self.mapProgress
+            self.bestAttacksPerformed = self.attacksPerformed
+            self.bestKnockedOut = self.knockedOut
+        if self.mapProgress > self.highestMapProgress:
+            self.hmReset = self.resets
+            self.highestMapProgress = self.mapProgress
+        if self.attacksPerformed > self.highestAttacksPerformed:
+            self.haReset = self.resets
+            self.highestAttacksPerformed = self.attacksPerformed
+        if self.knockedOut > self.highestKnockedOut:
+            self.hkReset = self.resets
+            self.highestKnockedOut = self.knockedOut
+            
+        
+        
+        progressLog = open("progressLogProcess" + str(self.rank) + ".txt", "w")
+        progressLog.write("\n")
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.write("\nProcess number = " + str(self.processNumber))
+        progressLog.write("\nExploration Reward Multiplier = "+str(self.rewardMultiplier))
+        progressLog.write("\nTotal Reward all resets = " +str(self.totalRewardAllResets)) 
+        progressLog.write("\nTotal got Pikachu = "+str(self.gotPikachuCounter))
+        progressLog.write("\nTotal attacks performed all resets = "+str(self.totalAttacksPerformed))
+        progressLog.write("\n")
+        progressLog.write("\nReset Number: " +str(self.resets))
+        progressLog.write("\n")
+        progressLog.write("\nBest Run? = " +str(self.bestRun)) 
+        progressLog.write("\nTotal Reward this reset = " +str(self.totalRewardThisReset))
+        progressLog.write("\nMap Progress = "+str(self.mapProgress))
+        progressLog.write("\nAttacks performed = "+str(self.attacksPerformed))
+        progressLog.write("\nTimes own Pokemon knocked out = "+str(self.knockedOut))
+        progressLog.write("\n")
+        progressLog.write("\nBest run stats:")
+        progressLog.write("\n")
+        progressLog.write("\nBest run reset count: " + str(self.bestRunResets))
+        progressLog.write("\nBest run total reward: " + str(self.bestRunTotalRewardThisReset))
+        progressLog.write("\nBest run map progress: " + str(self.bestRunProgressing))
+        progressLog.write("\nBest run damaging attacks performed: " + str(self.bestAttacksPerformed))
+        progressLog.write("\nBest run self ko total = "+str(self.bestKnockedOut))
+        progressLog.write("\n")
+        progressLog.write("\nHighest ever totals:")
+        progressLog.write("\n")
+        progressLog.write("\nHighest map Progress: " + str(self.highestMapProgress))
+        progressLog.write("\nOccurred at reset: " + str(self.hmReset))
+        progressLog.write("\nHighest amount of attacks: " + str(self.highestAttacksPerformed))
+        progressLog.write("\nOccurred at reset: " + str(self.haReset))
+        progressLog.write("\nHighest amount self ko: " + str(self.highestKnockedOut))
+        progressLog.write("\nOccurred at reset: " + str(self.hkReset))
+        progressLog.write("\n")
+        progressLog.write("\nReward Details:")
+        progressLog.write("\n")
+        progressLog.write("\nRun Reward Totals First/Current/Change:")
+        progressLog.write("\n")
+        MEPercentage = 0
+        if self.fRewardTrackerMapExploration > 0:
+            MEPercentage = (self.rewardTrackerMapExploration *100) / self.fRewardTrackerMapExploration
+        progressLog.write("\nMap exploration reward total: " + str(self.fRewardTrackerMapExploration) + "/"+ str(self.rewardTrackerMapExploration)+ "/" +str(MEPercentage))
+        WPPercentage = 0
+        if self.fRewardTrackerWorldProgression > 0:
+            WPPercentage = (self.rewardTrackerWorldProgression *100) / self.fRewardTrackerWorldProgression
+        progressLog.write("\nWorld progression reward total: " + str(self.fRewardTrackerWorldProgression) + "/"+ str(self.rewardTrackerWorldProgression) + "/"+str(WPPercentage))
+        PCPercentage = 0
+        if self.fRewardTrackerPokemonCaught > 0:
+            PCPercentage = (self.rewardTrackerPokemonCaught *100) / self.fRewardTrackerPokemonCaught
+        progressLog.write("\nPokemon caught reward total: " + str(self.fRewardTrackerPokemonCaught) + "/"+ str(self.rewardTrackerPokemonCaught) + "/"+str(PCPercentage))
+        PLPercentage = 0
+        if self.fRewardTrackerPokemonLevels > 0:
+            PLPercentage = (self.rewardTrackerPokemonLevels *100) / self.fRewardTrackerPokemonLevels
+        progressLog.write("\nPokemon levels reward total: " + str(self.fRewardTrackerPokemonLevels) + "/"+ str(self.rewardTrackerPokemonLevels) + "/"+str(PLPercentage))
+        DDPercentage = 0
+        if self.fRewardTrackerDamageDealt > 0:
+            DDPercentage = (self.rewardTrackerDamageDealt *100) / self.fRewardTrackerDamageDealt
+        progressLog.write("\nDamage dealt reward total: " + str(self.fRewardTrackerDamageDealt)  + "/"+ str(self.rewardTrackerDamageDealt)  + "/"+str(DDPercentage))
+        DRPercentage = 0
+        if self.fRewardTrackerDamageReceived > 0:
+            DRPercentage = (self.rewardTrackerDamageReceived *100) / self.fRewardTrackerDamageReceived
+        progressLog.write("\nDamage received reward total: " + str(self.fRewardTrackerDamageReceived) +"/"+ str(self.rewardTrackerDamageReceived) +"/"+str(DRPercentage))
+        FRPercentage = 0
+        if self.fRewardTrackerFlagsReached > 0:
+            FRPercentage = (self.rewardTrackerFlagsReached *100) / self.fRewardTrackerFlagsReached
+        
+        progressLog.write("\nFlags reached reward total: " + str(self.fRewardTrackerFlagsReached) + "/"+ str(self.rewardTrackerFlagsReached) + "/"+str(FRPercentage))
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.close()
+        
+        self.totalRewardThisReset = 0
+        self.attacksPerformed = 0
+        self.mapProgress = 0
+        self.knockedOut = 0
+        self.levelTotal = 0
+        
+        
+        self.rewardTrackerMapExploration = 0
+        self.rewardTrackerWorldProgression = 0
+        self.rewardTrackerPokemonCaught =0
+        self.rewardTrackerPokemonLevels =0
+        self.rewardTrackerDamageDealt =0
+        self.rewardTrackerDamageReceived =0
+        self.rewardTrackerFlagsReached =0
+    
+    
+    
+    
     
     def render(self):
         #used to get pixel data back from the screen variable
@@ -157,72 +322,12 @@ class YellowEnv(Env):
         self.newBattlePokemon = False
         self.newEnemy = False
         self.total_reward = np.array(int)
-        self.totalRewardAllResets += self.totalRewardThisReset
-        bestRun = False
-        
-        self.totalAttacksPerformed += self.attacksPerformed
-        
-        if self.totalRewardThisReset > self.bestRunTotalRewardThisReset:
-            bestRun = True
-            self.bestRunResets = self.resets
-            self.bestRunTotalRewardThisReset = self.totalRewardThisReset
-            self.bestRunProgressing = self.mapProgress
-            self.bestAttacksPerformed = self.attacksPerformed
-            self.bestKnockedOut = self.knockedOut
-        if self.mapProgress > self.highestMapProgress:
-            self.hmReset = self.resets
-            self.highestMapProgress = self.mapProgress
-        if self.attacksPerformed > self.highestAttacksPerformed:
-            self.haReset = self.resets
-            self.highestAttacksPerformed = self.attacksPerformed
-        if self.knockedOut > self.highestKnockedOut:
-            self.hkReset = self.resets
-            self.highestKnockedOut = self.knockedOut
-        
-        
-        progressLog = open("progressLogProcess" + str(self.rank) + ".txt", "w")
-        progressLog.write("\n")
-        progressLog.write("\n---------------------------------------------------------")
-        progressLog.write("\n---------------------------------------------------------")
-        progressLog.write("\nProcess number = " + str(self.processNumber))
-        progressLog.write("\nExploration Reward Multiplier = "+str(self.rewardMultiplier))
-        progressLog.write("\nTotal Reward all resets = " +str(self.totalRewardAllResets)) 
-        progressLog.write("\nTotal got Pikachu = "+str(self.gotPikachuCounter))
-        progressLog.write("\nTotal attacks performed all resets = "+str(self.totalAttacksPerformed))
-        progressLog.write("\n")
-        progressLog.write("\nReset Number: " +str(self.resets))
-        progressLog.write("\n")
-        progressLog.write("\nBest Run? = " +str(bestRun)) 
-        progressLog.write("\nTotal Reward this reset = " +str(self.totalRewardThisReset))
-        progressLog.write("\nMap Progress = "+str(self.mapProgress))
-        progressLog.write("\nAttacks performed = "+str(self.attacksPerformed))
-        progressLog.write("\nTimes own Pokemon knocked out = "+str(self.knockedOut))
-        progressLog.write("\n")
-        progressLog.write("\nBest run stats:")
-        progressLog.write("\n")
-        progressLog.write("\nBest run reset count: " + str(self.bestRunResets))
-        progressLog.write("\nBest run total reward: " + str(self.bestRunTotalRewardThisReset))
-        progressLog.write("\nBest run map progress: " + str(self.bestRunProgressing))
-        progressLog.write("\nBest run damaging attacks performed: " + str(self.bestAttacksPerformed))
-        progressLog.write("\nBest run self ko total = "+str(self.bestKnockedOut))
-        progressLog.write("\n")
-        progressLog.write("\nHighest ever totals:")
-        progressLog.write("\n")
-        progressLog.write("\nHighest map Progress: " + str(self.highestMapProgress))
-        progressLog.write("\nOccurred at reset: " + str(self.hmReset))
-        progressLog.write("\nHighest amount of attacks: " + str(self.highestAttacksPerformed))
-        progressLog.write("\nOccurred at reset: " + str(self.haReset))
-        progressLog.write("\nHighest amount self ko: " + str(self.highestKnockedOut))
-        progressLog.write("\nOccurred at reset: " + str(self.hkReset))
-        progressLog.write("\n---------------------------------------------------------")
-        progressLog.write("\n---------------------------------------------------------")
-        progressLog.close()
-        self.totalRewardThisReset = 0
-        self.attacksPerformed = 0
-        self.mapProgress = 0
-        self.knockedOut = 0
-        self.levelTotal = 0
         self.resets += 1
+        if self.resets > 0:
+            self.TrackerReset()
+        
+        
+        
 
         
         
@@ -246,12 +351,6 @@ class YellowEnv(Env):
             self.pyboy.tick()
 
         
-        LEVELS_ADDRESSES = [0xD18B, 0xD1B7, 0xD1E3, 0xD20F,0xD23B,0xD267]
-        
-        #levels = [self.pyboy.get_memory_value(a) for a in LEVELS_ADDRESSES]
-        #self.agent_stats.append({
-        #    'x': x_pos, 'y': y_pos, 'levels': levels
-        #})
         self.turnsInBattle = self.pyboy.get_memory_value(0XCCD4)
         obs_memory = self.render()
         new_reward = self.reward()
@@ -289,7 +388,7 @@ class YellowEnv(Env):
         #deprioritize using moves when out of pp
         #reward += self.rewardPP()
         #prioritize flags
-        reward += self.rewardFlags()
+        #reward += self.rewardFlags()
         if reward > 0:
             idc = False
         if reward < 0:
@@ -317,24 +416,35 @@ class YellowEnv(Env):
                     for j in range(len(self.revisitedMaps)):
                         if self.revisitedMaps[j] == currentLocation:
                             self.lastCoordinates = currentLocation
-                            return -1 * self.rewardMultiplier
+                            reward = -1 * self.rewardMultiplier
+                            self.TrackerAdd(reward,"ME")
+                            return reward
                     self.lastCoordinates = currentLocation
                     return 0
             self.exploredMaps.append(currentLocation)
             self.lastCoordinates = currentLocation
-            return 1 * self.rewardMultiplier
+            
+            reward = 1 * self.rewardMultiplier
+            self.TrackerAdd(reward,"ME")
+            return reward
         return 0
     
     def rewardProgress(self):
         reward = 0
-        mapTarget = [37,0,12,1,42,12,0,40,0,12,1,13,51,13,2,54]
+        #mapTarget = [37,0,12,1,42,12,0,40,0,12,1,13,51,13,2,54]
+        mapTarget = [37,0,12,1,13,51,13,2,54]
         currentMapAddress = 0XD35D
         currentMap = self.pyboy.get_memory_value(currentMapAddress)
         if currentMap == mapTarget[self.mapProgress]:
-            reward = 4
+            reward = 5
             self.mapProgress += 1
+            reward = reward * self.mapProgress
+            self.TrackerAdd(reward,"WP")
             return reward
         return reward
+        #completionPercent = self.step_count * 100 / self.max_steps 
+        #rewardModifier = 100 - completionPercent
+        #return (reward * rewardModifier) /100
         
         
     def rewardPokemon(self):
@@ -363,29 +473,36 @@ class YellowEnv(Env):
         pokemon6 = self.pyboy.get_memory_value(pokemon6Address)
         
         #checks if memory address is empty, if not, add it to the list to be checked
-        if pokemon1 != 255:
+        if pokemon1 != 0 & pokemon1!= 255 & self.contains(teamAddresses,pokemon1):
             teamAddresses.append(pokemon1)
-        if pokemon2 != 0:
+        if pokemon2 != 0 & pokemon2!= 0 & self.contains(teamAddresses,pokemon2):
             teamAddresses.append(pokemon2)
-        if pokemon3 != 0:
+        if pokemon3 != 0 & pokemon3!= 0 & self.contains(teamAddresses,pokemon3):
             teamAddresses.append(pokemon3)
-        if pokemon4 != 0:
+        if pokemon4 != 0 & pokemon4!= 0 & self.contains(teamAddresses,pokemon4):
             teamAddresses.append(pokemon4)
-        if pokemon5 != 0:
+        if pokemon5 != 0 & pokemon5!= 0 & self.contains(teamAddresses,pokemon5):
             teamAddresses.append(pokemon5)
-        if pokemon6 != 0:
+        if pokemon6 != 0 & pokemon6!= 0 & self.contains(teamAddresses,pokemon6):
             teamAddresses.append(pokemon6)
         
         #if ammount of pokemon has increased, give reward and overwrite caughtPokemon list, otherwise, lower reward and overwrite
         if len(teamAddresses) > len(self.caughtPokemon):
-            reward += 3
             self.caughtPokemon = teamAddresses
             self.gotPikachuCounter +=1
+            #he can abuse this by storing pokemon and taking them out of the pc. Honestly wondering if it can figure that out.
+            reward = 2 + self.gotPikachuCounter
         elif len(teamAddresses) < len(self.caughtPokemon):
             reward -= 3
             self.caughtPokemon = teamAddresses
-            
+        self.TrackerAdd(reward,"PC")
         return reward
+    
+    def contains(self, list, variable):
+        for i in list:
+            if i == variable:
+                return False
+        return True
     def rewardTrainers(self):
         #use this to generate reward based off specific battles that need to be fought to progress the game
         #this can help guide the model through the game by getting badges from gyms
@@ -432,14 +549,14 @@ class YellowEnv(Env):
         if self.battleInProgress == True:
             if pokemonMaxHP > 0 or pokemonMaxHPBattle > 0: 
                 if pokemonHP == 0 and self.newBattlePokemon == True:
-                    #reward -= 0.5
+                    reward -= 0.5
                     self.knockedOut += 1
-                    self.newBattlePokemon == False
-                    self.battleInProgress == False
+                    self.newBattlePokemon = False
+                    self.battleInProgress = False
         #if self.battleInProgress == True:
             #if pokemonStatus > 0:
                 #reward -= 10
-        
+        self.TrackerAdd(reward,"DR")
         return reward
     def rewardDamage(self):
         #use this to generate reward based off how much damage is done to the opposing pokemon?
@@ -480,18 +597,19 @@ class YellowEnv(Env):
             #had to check for maxhp to avoid constant reward loop due to default enemy current hp set at 0
             if enemyMaxHP > 0:
                 if enemyHP == 0 and self.newEnemy == True:
-                    reward += 2
+                    reward += 0.5
                     self.attacksPerformed +=1
                     self.newEnemy = False
                     self.battleInProgress = False
                 elif enemyHP > 0 and enemyHP < self.enemyLowestHP and self.newEnemy == True:
-                    reward += 1
+                    reward += 0.25
                     self.attacksPerformed +=1
                     self.enemyLowestHP = enemyHP
         #if self.battleInProgress == True:
          #   if enemyStatus > 0:
                     
           #     reward += 2
+        self.TrackerAdd(reward,"DD")
         return reward
         
     def rewardNoPikachu(self):
@@ -520,10 +638,13 @@ class YellowEnv(Env):
         levels = slot1+slot2+slot3+slot4+slot5+slot6
         
         if levels > self.levelTotal:
-            reward = 2
+            reward += 1
             self.levelTotal = levels
-        
+        self.TrackerAdd(reward,"PL")
         return reward
+        completionPercent = self.step_count * 100 / self.max_steps 
+        rewardModifier = 100 - completionPercent
+        return (reward * rewardModifier) /100
     def rewardHMs(self):
         #use this to generate reward for teaching required hms to pokemon
         #possibly try to ensure that it's only taught once
@@ -551,10 +672,10 @@ class YellowEnv(Env):
             if oaksParcel > 0:
                 
                 self.gotParcel = True
-                reward += 5
+                reward += 50
                 self.exploredMaps = [(0,(0,0))]
                 self.revisitedMaps = [(0,(0,0))]
-        
+        self.TrackerAdd(reward,"FR")
         return reward
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)

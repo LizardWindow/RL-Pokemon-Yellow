@@ -20,6 +20,9 @@
 #https://glitchcity.wiki/wiki/List_of_maps_by_index_number_(Generation_I)
 #used for index numbers of maps for rewardMapProgress
 
+#https://github.com/gzrjzcx/ML-agents/blob/master/docs/Training-PPO.md
+#great resource for explaining ppo hyperparameters
+
 #import vectorization wrappers
 import torch
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
@@ -129,11 +132,12 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
-    model = PPO('CnnPolicy', env, verbose=0, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=128, n_epochs=3, gamma=0.998, learning_rate=0.00001,device="cuda",)
-
-    #model= PPO.load('./train/best_model_ViridianTourist.zip', env=env, device="cuda")
+    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=512, n_epochs=3, gamma=0.998, )
+#learning_rate=0.00001,
+    #model= PPO.load('./train/best_model_CurrentProject.zip', env=env, device="cuda")
     model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')
+
 
 
     
