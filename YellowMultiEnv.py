@@ -100,7 +100,11 @@ if __name__ == '__main__':
         'progressLogs': PROGRESS_LOG
     }
     
+<<<<<<< HEAD
     num_cpu = 10
+=======
+    num_cpu = 32
+>>>>>>> 8026032088025b2101a7d4dcb0b984c16534b6a8
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
 
@@ -132,9 +136,15 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
+<<<<<<< HEAD
     model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=512, n_epochs=3, gamma=0.998, )
 #learning_rate=0.00001,
     #model= PPO.load('./train/best_model_CurrentProject.zip', env=env, device="cuda")
+=======
+    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=128, n_epochs=3, gamma=0.998, learning_rate=0.00001,device="cuda",)
+
+    #model= PPO.load('./train/best_model_ViridianTourist.zip', env=env, device="cuda")
+>>>>>>> 8026032088025b2101a7d4dcb0b984c16534b6a8
     model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')
 

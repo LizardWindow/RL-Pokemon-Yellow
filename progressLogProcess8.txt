@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
 ---------------------------------------------------------
@@ -45,4 +46,41 @@ Damage dealt reward total: 23.5/52.0/221.27659574468086
 Damage received reward total: -2.0/-6.5/0
 Flags reached reward total: 0/0/0
 ---------------------------------------------------------
+=======
+
+
+---------------------------------------------------------
+---------------------------------------------------------
+Process number = 8
+Exploration Reward Multiplier = 1
+Total Reward all resets = 536
+Total got Pikachu = 5
+Total attacks performed all resets = 36
+
+Reset Number: 1
+
+Best Run? = True
+Total Reward this reset = 536
+Map Progress = 3
+Attacks performed = 36
+Times own Pokemon knocked out = 776
+
+Best run stats:
+
+Best run reset count: 1
+Best run total reward: 536
+Best run map progress: 3
+Best run damaging attacks performed: 36
+Best run self ko total = 776
+
+Highest ever totals:
+
+Highest map Progress: 3
+Occurred at reset: 1
+Highest amount of attacks: 36
+Occurred at reset: 1
+Highest amount self ko: 776
+Occurred at reset: 1
+---------------------------------------------------------
+>>>>>>> 8026032088025b2101a7d4dcb0b984c16534b6a8
 ---------------------------------------------------------
