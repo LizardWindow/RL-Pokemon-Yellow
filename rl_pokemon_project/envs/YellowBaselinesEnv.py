@@ -1,16 +1,18 @@
 #Billy Matthews
 #wmatthe1@stumail.northeaststate.edu
 
-
+import gymnasium as gymnasium
 import sys
+import time
+import datetime
 import numpy as np
-from gym import Env, spaces
+from gymnasium import Env, spaces
 from pyboy import PyBoy
 from pyboy.utils import WindowEvent
-from gym.utils import seeding
+from gymnasium.utils import seeding
 from skimage.transform import resize
 class YellowEnv(Env):
-    def __init__(self,config):
+    def __init__(self,config,rank):
         
         super(YellowEnv,self).__init__()
         
@@ -29,7 +31,7 @@ class YellowEnv(Env):
             #WindowEvent.PRESS_BUTTON_START,
             #WindowEvent.PASS
         ]
-        #Sets gym's action space to the list of valid actions
+        #Sets gymnasium's action space to the list of valid actions
         #self.action_space = spaces.Discrete(len(self.valid_actions))
         self.action_space = spaces.Discrete(len(self.valid_actions))
         
@@ -54,9 +56,16 @@ class YellowEnv(Env):
         
         #the ammount of time between actions taken
         self.act_freq = config['action_freq']
+        self.max_steps = config['max_steps']
         
         #variables needed for reward
+        rank +=1
+        #self.rewardMultiplier = rank * 0.1
+        self.rewardMultiplier = 1
+        self.step_count = 0
         self.exploredMaps = [(0,(0,0))]
+        self.revisitedMaps = [(0,(0,0))]
+        self.lastCoordinates = (0,(0,0))
         self.caughtPokemon = []
         self.gotParcel = False
         self.battleInProgress = False
@@ -65,6 +74,36 @@ class YellowEnv(Env):
         self.mapProgress = 0
         self.newBattlePokemon = False
         self.newEnemy = False
+        self.levelTotal = 0
+        
+        #Variables to track specifics on how well model is performing
+        self.rank = rank
+        self.dateTime = time.localtime()
+        self.processNumber = rank
+        self.totalRewardAllResets = 0
+        self.totalRewardThisReset = 0
+        self.gotPikachuCounter = 0
+        self.attacksPerformed = 0
+        self.totalAttacksPerformed = 0
+        self.knockedOut = 0
+        self.resets = -1
+        self.progressing = 0
+        
+        
+        self.bestRunResets = 0
+        self.bestRunTotalRewardThisReset = 0
+        self.bestRunProgressing = 0
+        self.bestAttacksPerformed =0
+        self.bestKnockedOut = 0
+        
+        self.highestMapProgress = 0
+        self.hmReset =0
+        self.highestAttacksPerformed = 0
+        self.haReset =0
+        self.highestKnockedOut = 0
+        self.hkReset = 0
+        
+
 
 
         
@@ -88,7 +127,7 @@ class YellowEnv(Env):
         self.screen = self.pyboy.botsupport_manager().screen()
         
         self.agent_stats = []
-        self.total_reward=0
+        self.total_reward=np.array(int)
     
     def render(self):
         #used to get pixel data back from the screen variable
@@ -101,17 +140,99 @@ class YellowEnv(Env):
 # had to have seed = none and options = none to get it to work
 #, seed=None, options=None
     def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        
         with open(self.init_state, "rb") as f:
             self.pyboy.load_state(f)
             self.pyboy.set_emulation_speed(0)
-        
+        self.step_count = 0
+        self.exploredMaps = [(0,(0,0))]
+        self.revisitedMaps = [(0,(0,0))]
+        self.lastCoordinates = (0,(0,0))
+        self.caughtPokemon = []
+        self.gotParcel = False
+        self.battleInProgress = False
+        self.turnsInBattle = 1
+        self.enemyLowestHP = 0
+        self.newBattlePokemon = False
+        self.newEnemy = False
         self.total_reward = np.array(int)
+        self.totalRewardAllResets += self.totalRewardThisReset
+        bestRun = False
+        
+        self.totalAttacksPerformed += self.attacksPerformed
+        
+        if self.totalRewardThisReset > self.bestRunTotalRewardThisReset:
+            bestRun = True
+            self.bestRunResets = self.resets
+            self.bestRunTotalRewardThisReset = self.totalRewardThisReset
+            self.bestRunProgressing = self.mapProgress
+            self.bestAttacksPerformed = self.attacksPerformed
+            self.bestKnockedOut = self.knockedOut
+        if self.mapProgress > self.highestMapProgress:
+            self.hmReset = self.resets
+            self.highestMapProgress = self.mapProgress
+        if self.attacksPerformed > self.highestAttacksPerformed:
+            self.haReset = self.resets
+            self.highestAttacksPerformed = self.attacksPerformed
+        if self.knockedOut > self.highestKnockedOut:
+            self.hkReset = self.resets
+            self.highestKnockedOut = self.knockedOut
+        
+        
+        progressLog = open("progressLogProcess" + str(self.rank) + ".txt", "w")
+        progressLog.write("\n")
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.write("\nProcess number = " + str(self.processNumber))
+        progressLog.write("\nExploration Reward Multiplier = "+str(self.rewardMultiplier))
+        progressLog.write("\nTotal Reward all resets = " +str(self.totalRewardAllResets)) 
+        progressLog.write("\nTotal got Pikachu = "+str(self.gotPikachuCounter))
+        progressLog.write("\nTotal attacks performed all resets = "+str(self.totalAttacksPerformed))
+        progressLog.write("\n")
+        progressLog.write("\nReset Number: " +str(self.resets))
+        progressLog.write("\n")
+        progressLog.write("\nBest Run? = " +str(bestRun)) 
+        progressLog.write("\nTotal Reward this reset = " +str(self.totalRewardThisReset))
+        progressLog.write("\nMap Progress = "+str(self.mapProgress))
+        progressLog.write("\nAttacks performed = "+str(self.attacksPerformed))
+        progressLog.write("\nTimes own Pokemon knocked out = "+str(self.knockedOut))
+        progressLog.write("\n")
+        progressLog.write("\nBest run stats:")
+        progressLog.write("\n")
+        progressLog.write("\nBest run reset count: " + str(self.bestRunResets))
+        progressLog.write("\nBest run total reward: " + str(self.bestRunTotalRewardThisReset))
+        progressLog.write("\nBest run map progress: " + str(self.bestRunProgressing))
+        progressLog.write("\nBest run damaging attacks performed: " + str(self.bestAttacksPerformed))
+        progressLog.write("\nBest run self ko total = "+str(self.bestKnockedOut))
+        progressLog.write("\n")
+        progressLog.write("\nHighest ever totals:")
+        progressLog.write("\n")
+        progressLog.write("\nHighest map Progress: " + str(self.highestMapProgress))
+        progressLog.write("\nOccurred at reset: " + str(self.hmReset))
+        progressLog.write("\nHighest amount of attacks: " + str(self.highestAttacksPerformed))
+        progressLog.write("\nOccurred at reset: " + str(self.haReset))
+        progressLog.write("\nHighest amount self ko: " + str(self.highestKnockedOut))
+        progressLog.write("\nOccurred at reset: " + str(self.hkReset))
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.write("\n---------------------------------------------------------")
+        progressLog.close()
+        self.totalRewardThisReset = 0
+        self.attacksPerformed = 0
+        self.mapProgress = 0
+        self.knockedOut = 0
+        self.levelTotal = 0
+        self.resets += 1
+
+        
+        
         return self.render(), {}
 
     def step(self,action):
         
         self.pyboy.send_input(self.valid_actions[action])
         for i in range(self.act_freq):
+
             if i == 8:
                 if action < 4:
                     self.pyboy.send_input(self.release_arrow[action])
@@ -138,7 +259,10 @@ class YellowEnv(Env):
         
         terminated = False
         truncated = False
-        
+        if self.step_count >= self.max_steps:
+            truncated = True
+            
+        self.step_count += 1
         #return obs_memory, new_reward, terminated, truncated, {}
         return obs_memory, new_reward, terminated, truncated, {}
     
@@ -159,17 +283,19 @@ class YellowEnv(Env):
         #deprioritize talking to pikachu?
         #reward += self.rewardNoPikachu()
         #prioritize gaining levels
-        #reward += self.rewardPartyLevels()
+        reward += self.rewardPartyLevels()
         #prioritize teaching hms?
         #reward += self.rewardHMs()
         #deprioritize using moves when out of pp
         #reward += self.rewardPP()
         #prioritize flags
         reward += self.rewardFlags()
-        if reward > 1:
+        if reward > 0:
             idc = False
         if reward < 0:
             idc = False
+        #return reward *0.1
+        self.totalRewardThisReset += reward
         return reward
     def rewardPosition(self):
         #use this to generate reward based off the x/y coordinates of the current map
@@ -185,22 +311,19 @@ class YellowEnv(Env):
         currentMap = self.pyboy.get_memory_value(currentMapAddress)
         currentLocation = (currentMap,(mapCoordinates))
         
-        #for i in range(len(self.exploredMaps)):
-        #    if self.exploredMaps[i] == currentMap:
-        #        for j in range(self.exploredMaps[i]):
-        #            if self.exploredMaps[i][j]==mapCoordinates:
-        #                return 0
-        #            else:
-        #                self.exploredMaps[i].append(mapCoordinates)
-        #                return 1
-        #    else:
-        for i in range(len(self.exploredMaps)):
-            if self.exploredMaps[i] == currentLocation:
-                return 0
-        
-        
-        self.exploredMaps.append(currentLocation)
-        return 1
+        if currentLocation != self.lastCoordinates:
+            for i in range(len(self.exploredMaps)):
+                if self.exploredMaps[i] == currentLocation:    
+                    for j in range(len(self.revisitedMaps)):
+                        if self.revisitedMaps[j] == currentLocation:
+                            self.lastCoordinates = currentLocation
+                            return -1 * self.rewardMultiplier
+                    self.lastCoordinates = currentLocation
+                    return 0
+            self.exploredMaps.append(currentLocation)
+            self.lastCoordinates = currentLocation
+            return 1 * self.rewardMultiplier
+        return 0
     
     def rewardProgress(self):
         reward = 0
@@ -208,7 +331,7 @@ class YellowEnv(Env):
         currentMapAddress = 0XD35D
         currentMap = self.pyboy.get_memory_value(currentMapAddress)
         if currentMap == mapTarget[self.mapProgress]:
-            reward = 100
+            reward = 4
             self.mapProgress += 1
             return reward
         return reward
@@ -255,10 +378,11 @@ class YellowEnv(Env):
         
         #if ammount of pokemon has increased, give reward and overwrite caughtPokemon list, otherwise, lower reward and overwrite
         if len(teamAddresses) > len(self.caughtPokemon):
-            reward += 100
+            reward += 3
             self.caughtPokemon = teamAddresses
+            self.gotPikachuCounter +=1
         elif len(teamAddresses) < len(self.caughtPokemon):
-            reward -= 30
+            reward -= 3
             self.caughtPokemon = teamAddresses
             
         return reward
@@ -275,7 +399,6 @@ class YellowEnv(Env):
         #this is one piece of teaching it how to battle
 
         reward = 0
-        newBattlePokemon = False
         
         pokemonMaxHPBattleAddress1 = 0XD022
         pokemonMaxHPBattleAddress2 = 0XD023
@@ -309,12 +432,13 @@ class YellowEnv(Env):
         if self.battleInProgress == True:
             if pokemonMaxHP > 0 or pokemonMaxHPBattle > 0: 
                 if pokemonHP == 0 and self.newBattlePokemon == True:
-                    reward -= 50
+                    #reward -= 0.5
+                    self.knockedOut += 1
                     self.newBattlePokemon == False
                     self.battleInProgress == False
-        if self.battleInProgress == True:
-            if pokemonStatus > 0:
-                reward -= 10
+        #if self.battleInProgress == True:
+            #if pokemonStatus > 0:
+                #reward -= 10
         
         return reward
     def rewardDamage(self):
@@ -343,8 +467,9 @@ class YellowEnv(Env):
         enemyHP = enemyHP1 + enemyHP2
         enemyMaxHP = enemyMaxHP1 + enemyMaxHP2
         
-        if self.turnsInBattle == 0 & enemyStatus == 0:
+        if self.turnsInBattle == 0 & enemyStatus == 0 & self.battleInProgress == False:
             self.battleInProgress = True
+            #reward +=1 why was this here????
         
         if enemyMaxHP > 0 and enemyHP > 0:
             self.newEnemy = True
@@ -355,16 +480,18 @@ class YellowEnv(Env):
             #had to check for maxhp to avoid constant reward loop due to default enemy current hp set at 0
             if enemyMaxHP > 0:
                 if enemyHP == 0 and self.newEnemy == True:
-                    reward += 50
+                    reward += 2
+                    self.attacksPerformed +=1
                     self.newEnemy = False
                     self.battleInProgress = False
                 elif enemyHP > 0 and enemyHP < self.enemyLowestHP and self.newEnemy == True:
-                    reward += 2
+                    reward += 1
+                    self.attacksPerformed +=1
                     self.enemyLowestHP = enemyHP
-        if self.battleInProgress == True:
-            if enemyStatus > 0:
+        #if self.battleInProgress == True:
+         #   if enemyStatus > 0:
                     
-               reward += 2
+          #     reward += 2
         return reward
         
     def rewardNoPikachu(self):
@@ -374,7 +501,29 @@ class YellowEnv(Env):
     def rewardPartyLevels(self):
         #use this to generate reward based off highest ever party combined levels
         #make sure not to set by current or might run into problem of boxing pokemon
-        return
+        reward = 0
+        
+        slot1Address =0xD18B
+        slot2Address =0xD1B7
+        slot3Address =0xD1E3
+        slot4Address =0xD20F
+        slot5Address =0xD23B
+        slot6Address =0xD267
+        
+        slot1 = self.pyboy.get_memory_value(slot1Address)
+        slot2 = self.pyboy.get_memory_value(slot2Address)
+        slot3 = self.pyboy.get_memory_value(slot3Address)
+        slot4 = self.pyboy.get_memory_value(slot4Address)
+        slot5 = self.pyboy.get_memory_value(slot5Address)
+        slot6 = self.pyboy.get_memory_value(slot6Address)
+        
+        levels = slot1+slot2+slot3+slot4+slot5+slot6
+        
+        if levels > self.levelTotal:
+            reward = 2
+            self.levelTotal = levels
+        
+        return reward
     def rewardHMs(self):
         #use this to generate reward for teaching required hms to pokemon
         #possibly try to ensure that it's only taught once
@@ -402,7 +551,9 @@ class YellowEnv(Env):
             if oaksParcel > 0:
                 
                 self.gotParcel = True
-                reward += 100
+                reward += 5
+                self.exploredMaps = [(0,(0,0))]
+                self.revisitedMaps = [(0,(0,0))]
         
         return reward
     def _seed(self, seed=None):
