@@ -31,11 +31,11 @@ from stable_baselines3.common.utils import set_random_seed
 import os
 #import ppo for algos
 from stable_baselines3 import PPO
-#import base callback for saving models
-from stable_baselines3.common.callbacks import BaseCallback
 #import register to register pokemon yellow as a custom gym environment
 from gymnasium.envs.registration import register, make
-from rl_pokemon_project.envs.YellowBaselinesEnv import YellowEnv
+from envs.YellowBaselinesEnv import YellowEnv
+
+from utilities.BaselinesCallback import TrainAndLoggingCallback
 
 #This method was taken from the red rl repo linked above. This was one of the keys to my multiprocessing problem, mixed with discovering the api compatibility
 #problem linked below
@@ -75,19 +75,19 @@ if __name__ == '__main__':
         id="Yellow-v0",
         entry_point="rl_pokemon_project.envs.YellowBaselinesEnv:YellowEnv",
     )
-    fileChoice = 4
+    fileChoice = 2
     if fileChoice == 0:
-        stateFile = "CatchingTutorial.gb.state"
+        stateFile = "./states/CatchingTutorial.gb.state"
     elif fileChoice == 1:
-        stateFile = "FirstBattle.state"
+        stateFile = "./states/FirstBattle.state"
     elif fileChoice == 2:
-        stateFile = "LevelingUp.state"
+        stateFile = "./states/LevelingUp.state"
     elif fileChoice == 3:
-        stateFile = "GotOaksParcel.state"
+        stateFile = "./states/GotOaksParcel.state"
     elif fileChoice == 4:
-        stateFile = "StartWithPokeballs.state"
+        stateFile = "./states/StartWithPokeballs.state"
     else:
-        stateFile = "PokemonYellowVersion.gb.state"
+        stateFile = "./states/PokemonYellowVersion.gb.state"
     #setup directories
     ROM_PATH = "PokemonYellowVersion.gb" #File location of Pokemon Yellow
     INIT_STATE_FILE_PATH = stateFile #File location of the starting state of the rom
@@ -100,28 +100,11 @@ if __name__ == '__main__':
         'progressLogs': PROGRESS_LOG
     }
     
-    num_cpu = 10
+    num_cpu = 1
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
+    #env = DummyVecEnv([make_env(env_config,i) for i in range(num_cpu)])
 
-    #saves ai learning model and logs
-    class TrainAndLoggingCallback(BaseCallback):
-        def __init__(self, check_freq, save_path, verbose=1):
-            super(TrainAndLoggingCallback, self).__init__(verbose)
-            self.check_freq = check_freq
-            self.save_path = save_path
-            
-        def _init_callback(self):
-            if self.save_path is not None:
-                os.makedirs(self.save_path, exist_ok=True)
-        
-        def _on_step(self):
-            if self.n_calls % self.check_freq == 0:
-                #model_path = os.path.join(self.save_path, 'best_model')
-                model_path = os.path.join(self.save_path, 'best_model_{}'.format(self.n_calls))
-                self.model.save(model_path)
-                
-            return True
     #setup directories for saving training data
     CHECKPOINT_DIR = './train/'
     LOG_DIR = './logs/'
@@ -133,7 +116,7 @@ if __name__ == '__main__':
     
     #create reinforcement learning model
     model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=512, n_epochs=3, gamma=0.998, )
-#learning_rate=0.00001,
+    #learning_rate=0.00001,
     #model= PPO.load('./train/best_model_CurrentProject.zip', env=env, device="cuda")
     model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')
