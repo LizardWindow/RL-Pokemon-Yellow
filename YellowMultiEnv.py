@@ -23,6 +23,10 @@
 #https://github.com/gzrjzcx/ML-agents/blob/master/docs/Training-PPO.md
 #great resource for explaining ppo hyperparameters
 
+#https://tcrf.net/Pok%C3%A9mon_Red_and_Blue/Internal_Index_Number
+#used to find pokemon index values
+
+
 #import vectorization wrappers
 import torch
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv

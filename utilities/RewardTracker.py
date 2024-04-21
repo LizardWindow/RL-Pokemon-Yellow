@@ -149,10 +149,10 @@ class RewardTracker:
         
         self.totalRewardThisReset = 0
         self.attacksPerformed = 0
-        self.mapProgress = 0
+        
         self.knockedOut = 0
         self.levelTotal = 0
-        
+        self.mapProgress = 0
         
         self.rewardTrackerMapExploration = 0
         self.rewardTrackerWorldProgression = 0
