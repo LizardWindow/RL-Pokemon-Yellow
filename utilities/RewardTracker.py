@@ -1,7 +1,15 @@
+#Billy Matthews
+#wmatthe1@stumail.northeaststate.edu
+
+
 import time
 
 class RewardTracker:
-    
+    """Class for tracking various reward values to help debug long running issues with the reward weights and how the model uses them to learn
+
+    Returns:
+        _type_: _description_
+    """
     #This class saves the model and training logs for the stablebaselines model
     
     def __init__(self, rank):
@@ -74,6 +82,12 @@ class RewardTracker:
         
         
     def TrackerAdd(self, reward, tracker):
+        """Adds reward to tracker variables based off keyword
+
+        Args:
+            reward (_type_): _description_
+            tracker (_type_): _description_
+        """
         if tracker == "ME":
             self.rewardTrackerMapExploration += reward
         elif tracker == "WP":
@@ -88,7 +102,20 @@ class RewardTracker:
             self.rewardTrackerDamageReceived += reward
         elif tracker =="FR":
             self.rewardTrackerFlagsReached += reward
+        elif tracker =="RA":
+            self.rewardTrackerRunAway += reward
+        elif tracker =="T":
+            self.rewardTrackerTrainers += reward
+        elif tracker =="PP":
+            self.rewardTrackerPP += reward
+        elif tracker =="CF":
+            self.rewardTrackerPokemonCenter += reward
     def TrackerReset(self, resets):
+        """Resets single reset values after writing tracked reward to a text file
+
+        Args:
+            resets (_type_): _description_
+        """
         if resets == 1:
             self.fRewardTrackerMapExploration = self.rewardTrackerMapExploration
             self.fRewardTrackerWorldProgression = self.rewardTrackerWorldProgression
@@ -158,32 +185,41 @@ class RewardTracker:
         progressLog.write("\n")
         progressLog.write("\nReward Details:")
         progressLog.write("\n")
-        progressLog.write("\nRun Reward Totals First/Current/Change:")
+        progressLog.write("\nRun Reward Totals Average/First/Current/Change:")
         progressLog.write("\n")
         progressLog.write("\nExploration:")
-        progressLog.write(self.TrackerRewardStringBuild("Map exploration", self.fRewardTrackerMapExploration, self.rewardTrackerMapExploration, self.aRewardTrackerMapExploration, resets))
-        progressLog.write(self.TrackerRewardStringBuild("World progression", self.fRewardTrackerWorldProgression, self.rewardTrackerWorldProgression,self.aRewardTrackerWorldProgression, resets))
-        progressLog.write(self.TrackerRewardStringBuild("Centers Found", self.fRewardTrackerPokemonCenter, self.rewardTrackerPokemonCenter,self.aRewardTrackerPokemonCenter, resets))
-        progressLog.write(self.TrackerRewardStringBuild("Flags reached", self.fRewardTrackerFlagsReached, self.rewardTrackerFlagsReached,self.aRewardTrackerFlagsReached, resets))
+        self.aRewardTrackerMapExploration = self.Averager(self.aRewardTrackerMapExploration,self.rewardTrackerMapExploration, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Map exploration", self.fRewardTrackerMapExploration, self.rewardTrackerMapExploration, self.aRewardTrackerMapExploration))
+        self.aRewardTrackerWorldProgression = self.Averager(self.aRewardTrackerWorldProgression,self.rewardTrackerWorldProgression, resets)
+        progressLog.write(self.TrackerRewardStringBuild("World progression", self.fRewardTrackerWorldProgression, self.rewardTrackerWorldProgression,self.aRewardTrackerWorldProgression))
+        self.aRewardTrackerPokemonCenter = self.Averager(self.aRewardTrackerPokemonCenter,self.rewardTrackerPokemonCenter, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Centers Found", self.fRewardTrackerPokemonCenter, self.rewardTrackerPokemonCenter,self.aRewardTrackerPokemonCenter))
+        self.aRewardTrackerFlagsReached = self.Averager(self.aRewardTrackerFlagsReached,self.rewardTrackerFlagsReached, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Flags reached", self.fRewardTrackerFlagsReached, self.rewardTrackerFlagsReached,self.aRewardTrackerFlagsReached))
         progressLog.write("\nBattle:")
-        progressLog.write(self.TrackerRewardStringBuild("Pokemon caught", self.fRewardTrackerPokemonCaught, self.rewardTrackerPokemonCaught,self.aRewardTrackerPokemonCaught, resets))
-        progressLog.write(self.TrackerRewardStringBuild("Pokemon levels", self.fRewardTrackerPokemonLevels, self.rewardTrackerPokemonLevels,self.aRewardTrackerPokemonLevels, resets))
-        progressLog.write(self.TrackerRewardStringBuild("Damage dealt", self.fRewardTrackerDamageDealt, self.rewardTrackerDamageDealt,self.aRewardTrackerDamageDealt, resets))
-        progressLog.write(self.TrackerRewardStringBuild("Damage received", self.fRewardTrackerDamageReceived, self.rewardTrackerDamageReceived,self.aRewardTrackerDamageReceived, resets))
-        progressLog.write(self.TrackerRewardStringBuild("Gym Leader Fight", self.fRewardTrackerTrainers, self.rewardTrackerTrainers,self.aRewardTrackerTrainers, resets))
-        progressLog.write(self.TrackerRewardStringBuild("Run Away", self.fRewardTrackerRunAway, self.rewardTrackerRunAway,self.aRewardTrackerRunAway, resets))
-        progressLog.write(self.TrackerRewardStringBuild("PP Depleted", self.fRewardTrackerPP, self.rewardTrackerPP,self.aRewardTrackerPP, resets))
+        self.aRewardTrackerPokemonCaught = self.Averager(self.aRewardTrackerPokemonCaught,self.rewardTrackerPokemonCaught, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Pokemon caught", self.fRewardTrackerPokemonCaught, self.rewardTrackerPokemonCaught,self.aRewardTrackerPokemonCaught))
+        self.aRewardTrackerPokemonLevels = self.Averager(self.aRewardTrackerPokemonLevels,self.rewardTrackerPokemonLevels, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Pokemon levels", self.fRewardTrackerPokemonLevels, self.rewardTrackerPokemonLevels,self.aRewardTrackerPokemonLevels))
+        self.aRewardTrackerDamageDealt = self.Averager(self.aRewardTrackerDamageDealt,self.rewardTrackerDamageDealt, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Damage dealt", self.fRewardTrackerDamageDealt, self.rewardTrackerDamageDealt,self.aRewardTrackerDamageDealt))
+        self.aRewardTrackerDamageReceived = self.Averager(self.aRewardTrackerDamageReceived,self.rewardTrackerDamageReceived, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Damage received", self.fRewardTrackerDamageReceived, self.rewardTrackerDamageReceived,self.aRewardTrackerDamageReceived))
+        self.aRewardTrackerTrainers = self.Averager(self.aRewardTrackerTrainers,self.rewardTrackerTrainers, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Gym Leader Fight", self.fRewardTrackerTrainers, self.rewardTrackerTrainers,self.aRewardTrackerTrainers))
+        self.aRewardTrackerRunAway = self.Averager(self.aRewardTrackerRunAway,self.rewardTrackerRunAway, resets)
+        progressLog.write(self.TrackerRewardStringBuild("Run Away", self.fRewardTrackerRunAway, self.rewardTrackerRunAway,self.aRewardTrackerRunAway))
+        self.aRewardTrackerPP = self.Averager(self.aRewardTrackerPP,self.rewardTrackerPP, resets)
+        progressLog.write(self.TrackerRewardStringBuild("PP Depleted", self.fRewardTrackerPP, self.rewardTrackerPP,self.aRewardTrackerPP))
         progressLog.write("\n---------------------------------------------------------")
         progressLog.write("\n---------------------------------------------------------")
         
         
         self.totalRewardThisReset = 0
         self.attacksPerformed = 0
-        
         self.knockedOut = 0
         self.levelTotal = 0
         self.mapProgress = 0
-        
         self.rewardTrackerMapExploration = 0
         self.rewardTrackerWorldProgression = 0
         self.rewardTrackerPokemonCaught =0
@@ -193,13 +229,33 @@ class RewardTracker:
         self.rewardTrackerFlagsReached =0
     
     
-    def TrackerRewardStringBuild(self,name, firstReward, currentReward, averageReward, reset):
+    def TrackerRewardStringBuild(self,name, firstReward, currentReward, averageReward):
+        """Builds a string for writing collected reward values
+
+        Args:
+            name (_type_): _description_
+            firstReward (_type_): _description_
+            currentReward (_type_): _description_
+            averageReward (_type_): _description_
+        """
         rewardPercentage = 0
         if firstReward > 0:
             rewardPercentage = (currentReward *100) / firstReward
         
-        return("\n"+str(name) +" reward total: " + str(self.Averager(averageReward,currentReward, reset)) + str(firstReward) + "/"+ str(currentReward) + "/"+str(rewardPercentage))
+        return("\n"+str(name) +" reward total: " + str(averageReward) + "/"+  str(firstReward) + "/"+ str(currentReward) + "/"+str(rewardPercentage))
     
     def Averager(self, averageReward, currentReward, reset):
+        """Averages collected reward values
+
+        Args:
+            averageReward (_type_): _description_
+            currentReward (_type_): _description_
+            reset (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if reset == 1:
+            return currentReward
         return ((averageReward * (reset - 1)) +currentReward) / reset
         

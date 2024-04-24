@@ -2,41 +2,15 @@
 #wmatthe1@stumail.northeaststate.edu
 
 
-#https://medium.com/@ym1942/create-a-gymnasium-custom-environment-part-2-1026b96dba69
-#Used for Yellow env starter code
-
-#https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Red_and_Blue/RAM_map
-#Used to find Memory Addresses for Pokemon Yellow
-
-#https://gymnasium.farama.org/tutorials/gymnasium_basics/vector_envs_tutorial/#
-#used code for A2C model
-
-#https://github.com/PWhiddy/PokemonRedExperiments
-
-#Renotte, Nicholas. “Build an Mario AI Model with Python | Gaming Reinforcement Learning.” YouTube, 
-# YouTube, 23 Dec. 2021, www.youtube.com/watch?v=2eeYqJ0uBKE.
-#used as starter code for the code in YellowSingleEnv
-
-#https://glitchcity.wiki/wiki/List_of_maps_by_index_number_(Generation_I)
-#used for index numbers of maps for rewardMapProgress
-
-#https://github.com/gzrjzcx/ML-agents/blob/master/docs/Training-PPO.md
-#great resource for explaining ppo hyperparameters
-
-#https://tcrf.net/Pok%C3%A9mon_Red_and_Blue/Internal_Index_Number
-#used to find pokemon index values
-
 
 #import vectorization wrappers
-import torch
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from gymnasium import Env, spaces
 from stable_baselines3.common.utils import set_random_seed
-# import os for file path management
-import os
+import numpy as np
 #import ppo for algos
 from stable_baselines3 import PPO
 #import register to register pokemon yellow as a custom gym environment
-from gymnasium.envs.registration import register, make
+from gymnasium.envs.registration import register
 from envs.YellowBaselinesEnv import YellowEnv
 from IPython.display import clear_output
 
@@ -101,19 +75,87 @@ if __name__ == '__main__':
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
         'gb_path': ROM_PATH, 'max_steps': ep_length,
-        'progressLogs': PROGRESS_LOG
+        'progressLogs': PROGRESS_LOG, 'batl_mult' : 1,
+        'expl_mult': 1
     }
     
+    
     env = YellowEnv(env_config,0)
-
     states = []
     rewards = []
-    model= PPO.load('./train/MallWalker.zip', env=env)
+    
+    #Variable to select what model to test out: I have made more changes to reward leading to my desktop currently training on the new model
+    #I have not yet gone through these individual models to figure out most of their behavior. noticeableSuccess and ScaredOfBaldMen are examples
+    #of the model learning with small crippling problems. IE, ScaredOfBaldMen was the first model trained after adding a punishment for fleeing battles
+    #However, in the second town there is a npc that puts you in a mandatory catching tutorial which triggered as a fled battle upon completion
+    #This punished the model and it learned to avoid that npc, making it scared of bald men.
+    
+    #ComputerNerd/MallWalker both learned destructive behavior due to a reward value leak.
+    modelChoice = 0
+    
+    if modelChoice == 0:
+        env.output_shape = (36, 40, 3) # this and following line are needed to fix where the output shape was grayscaled in recent generations
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8) # causing the model and current env to be incompatible
+        model= PPO.load('./train/noticeableSuccess.zip', env=env)
+    elif modelChoice ==1:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/Fred.zip', env=env)
+    elif modelChoice == 2:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/ScaredOfBaldMen.zip', env=env)
+    elif modelChoice == 3:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/ComputerNerd.zip', env=env)
+    elif modelChoice == 4:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/CurrentProject.zip', env=env)
+    elif modelChoice == 5:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/IAmBlind.zip', env=env)
+    elif modelChoice == 6:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/LikesToFight.zip', env=env)
+    elif modelChoice == 7:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/MallWalker.zip', env=env)
+    elif modelChoice == 8:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/OopsAllSingle.zip', env=env)
+    elif modelChoice == 9:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/PunishedMovement.zip', env=env)
+    elif modelChoice == 10:
+        env.output_shape = (36, 40, 1)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/TestBest1.zip', env=env)
+    elif modelChoice == 11:
+        env.output_shape = (36, 40, 1)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/TestBest2.zip', env=env)
+    elif modelChoice == 12:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/TooHighLevelsReward.zip', env=env)
+    else:
+        env.output_shape = (36, 40, 3)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/ViridianTourist.zip', env=env)
     state, [] = env.reset()
     while True:
         action, state = model.predict(state)
         state,reward,truncated,terminated, stuff = env.step(action)
         env.render()
+
+   
 
 
 

@@ -1,15 +1,15 @@
 #Billy Matthews
 #wmatthe1@stumail.northeaststate.edu
 
-import gymnasium as gymnasium
-import sys
-import numpy as np
-from gymnasium import Env, spaces
-from pyboy import PyBoy
-from pyboy.utils import WindowEvent
-from gymnasium.utils import seeding
-from skimage.transform import resize
-from utilities.RewardTracker import RewardTracker
+import sys #Used by Pyboy
+import gymnasium as gymnasium #Contains many supporting methods/classes/wrappers for setting up environments for RL models
+import numpy as np #Used for many methods in gymnasium
+from gymnasium import Env, spaces #Used by gymnasium
+from pyboy import PyBoy #Python based Gameboy Emulator
+from pyboy.utils import WindowEvent #Used for Pyboy functionality
+from gymnasium.utils import seeding #Used to generate a random seed
+from skimage.transform import resize #Used to resize pixel data in Render()
+from utilities.RewardTracker import RewardTracker #Tracks reward data for debugging
 class YellowEnv(Env):
     """Model for a Pokemon Yellow Gymnasium environment
 
@@ -39,7 +39,6 @@ class YellowEnv(Env):
             #WindowEvent.PASS
         ]
         #Sets gymnasium's action space to the list of valid actions
-        #self.action_space = spaces.Discrete(len(self.valid_actions))
         self.action_space = spaces.Discrete(len(self.valid_actions))
         
         #Releases the held arrow key
@@ -69,7 +68,6 @@ class YellowEnv(Env):
         
         #variables needed for reward
         self.rank = rank +1
-        self.rewardMultiplier = 0.2
         self.explorationMultiplier = config['expl_mult']
         self.battleMultiplier = config['batl_mult']
         self.step_count = 0
@@ -139,7 +137,7 @@ class YellowEnv(Env):
         #simple directmedia layer 2, used by pyboy to access graphics/controls/etc
         #can switch to headless to not display game to screen
         head='SDL2'
-        if self.rank > 1:
+        if self.rank > 4:
             head='headless'
         
         #instantiates a pyboy emulator object to run yellow
@@ -242,6 +240,8 @@ class YellowEnv(Env):
             float: Reward
         """
         
+        #Changed reward system heavily last few days, currently experimenting to find better values
+        
         reward = 0
         #punishes running away from battle
         reward += (self.rewardPUNISHFEAR() * 0.1) * self.battleMultiplier
@@ -289,7 +289,7 @@ class YellowEnv(Env):
             self.battleReset = False
             self.battlelost = False
             reward -=1
-        
+        self.rewardTracker.TrackerAdd(reward, "CF")
         return reward
     
     def rewardPokemonCenters(self):
@@ -306,6 +306,7 @@ class YellowEnv(Env):
         if currentMap == 58:
             self.pewterPokeCenter = True
             reward +=1
+        self.rewardTracker.TrackerAdd(reward, "PC")
         return reward
             
     
@@ -476,6 +477,7 @@ class YellowEnv(Env):
         #as it is given every step, but will be fine for my current purpose of getting the agent to the gym
         if gymMusicPlaying > 0:
             reward +=1
+            self.rewardTracker.TrackerAdd(reward, "T")
         return reward
     def rewardOwnPokemonKO(self):
         """use this to punish letting own pokemon get knocked out
@@ -630,7 +632,8 @@ class YellowEnv(Env):
              reward -=1
              self.PPPunished == True
              
-             
+        self.rewardTracker.TrackerAdd(reward, "PP")
+        
         return reward
     #TODO fix/rebuild flags reward
     def rewardFlags(self):

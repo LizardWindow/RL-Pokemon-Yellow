@@ -2,42 +2,15 @@
 #wmatthe1@stumail.northeaststate.edu
 
 
-#https://medium.com/@ym1942/create-a-gymnasium-custom-environment-part-2-1026b96dba69
-#Used for Yellow env starter code
-
-#https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Red_and_Blue/RAM_map
-#Used to find Memory Addresses for Pokemon Yellow
-
-#https://gymnasium.farama.org/tutorials/gymnasium_basics/vector_envs_tutorial/#
-#used code for A2C model
-
-#https://github.com/PWhiddy/PokemonRedExperiments
-
-#Renotte, Nicholas. “Build an Mario AI Model with Python | Gaming Reinforcement Learning.” YouTube, 
-# YouTube, 23 Dec. 2021, www.youtube.com/watch?v=2eeYqJ0uBKE.
-#used as starter code for the code in YellowSingleEnv
-
-#https://glitchcity.wiki/wiki/List_of_maps_by_index_number_(Generation_I)
-#used for index numbers of maps for rewardMapProgress
-
-#https://github.com/gzrjzcx/ML-agents/blob/master/docs/Training-PPO.md
-#great resource for explaining ppo hyperparameters
-
-#https://tcrf.net/Pok%C3%A9mon_Red_and_Blue/Internal_Index_Number
-#used to find pokemon index values
-
-
 #import vectorization wrappers
-import torch
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
-# import os for file path management
-import os
 #import ppo for algos
 from stable_baselines3 import PPO
 #import register to register pokemon yellow as a custom gym environment
-from gymnasium.envs.registration import register, make
+from gymnasium.envs.registration import register
 from envs.YellowBaselinesEnv import YellowEnv
+import psutil
 
 from utilities.BaselinesCallback import TrainAndLoggingCallback
 
@@ -79,6 +52,8 @@ if __name__ == '__main__':
         id="Yellow-v0",
         entry_point="rl_pokemon_project.envs.YellowBaselinesEnv:YellowEnv",
     )
+    
+    #Variable to choose starting state of the game
     fileChoice = 6
     if fileChoice == 0:
         stateFile = "./states/CatchingTutorial.gb.state"
@@ -101,7 +76,9 @@ if __name__ == '__main__':
     ROM_PATH = "PokemonYellowVersion.gb" #File location of Pokemon Yellow
     INIT_STATE_FILE_PATH = stateFile #File location of the starting state of the rom
     PROGRESS_LOG = './logs/progressLogs/'
-    ep_length = 2048 *10
+    
+    ep_length = 2048 *10 #episode length of training before env is truncated, needs to be a multiple of batch size, making a multiplier better for changing length
+    
     #sets up configurations for the environment
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
@@ -109,8 +86,8 @@ if __name__ == '__main__':
         'progressLogs': PROGRESS_LOG, 'batl_mult' : 1,
         'expl_mult': 1
     }
-    
-    num_cpu = 1
+    max = psutil.cpu_count()
+    num_cpu = max
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
     #env = DummyVecEnv([make_env(env_config,i) for i in range(num_cpu)])
@@ -123,8 +100,7 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
-    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=512, n_epochs=3, gamma=0.998, )
-    #learning_rate=0.00001,
+    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=256, n_epochs=3, gamma=0.998, )
     #model= PPO.load('./train/best_model_CurrentProject.zip', env=env)
     model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')

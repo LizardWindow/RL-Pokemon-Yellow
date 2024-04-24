@@ -1,0 +1,22 @@
+#https://medium.com/@ym1942/create-a-gymnasium-custom-environment-part-2-1026b96dba69
+#Used for Yellow env starter code, did not include code for reward, and has been heavily modified to work with my current model
+
+#https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Red_and_Blue/RAM_map
+#Used to find Memory Addresses for Pokemon Yellow
+
+#https://github.com/PWhiddy/PokemonRedExperiments
+#Created a much more complex version of what I'm doing, used as a reference for some ppo hyperparameters, along with for debugging longstanding problems
+
+#Renotte, Nicholas. “Build an Mario AI Model with Python | Gaming Reinforcement Learning.” YouTube, 
+# YouTube, 23 Dec. 2021, www.youtube.com/watch?v=2eeYqJ0uBKE.
+#used as starter code for original YellowSingleEnv, which eventually got scrapped for YellowMultiEnv
+#Pulled baselinesCallback out and made it it's own file, a technique for using a trained model was also used for YellowTestModel
+
+#https://glitchcity.wiki/wiki/List_of_maps_by_index_number_(Generation_I)
+#used for index numbers of maps for rewardMapProgress
+
+#https://github.com/gzrjzcx/ML-agents/blob/master/docs/Training-PPO.md
+#great resource for explaining ppo hyperparameters
+
+#https://tcrf.net/Pok%C3%A9mon_Red_and_Blue/Internal_Index_Number
+#used to find pokemon index values

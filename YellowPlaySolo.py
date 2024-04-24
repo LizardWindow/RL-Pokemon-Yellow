@@ -1,13 +1,6 @@
 #Billy Matthews
 #wmatthe1@stumail.northeaststate.edu
 
-
-#https://medium.com/@ym1942/create-a-gymnasium-custom-environment-part-2-1026b96dba69
-#Used to help learn how to create
-
-#https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Red_and_Blue/RAM_map
-#Used to find Memory Addresses for Pokemon Yellow
-
 import sys
 import gymnasium as gym
 import numpy as np
