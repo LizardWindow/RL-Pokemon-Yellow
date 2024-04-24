@@ -11,12 +11,19 @@ from gymnasium.utils import seeding
 from skimage.transform import resize
 from utilities.RewardTracker import RewardTracker
 class YellowEnv(Env):
+    """Model for a Pokemon Yellow Gymnasium environment
+
+    Args:
+        Env (_type_): _description_
+    """
     def __init__(self,config,rank):
-        
+        """Parameterized constructor
+
+        Args:
+            config (_type_): _Configuration file for setting up the environment_
+            rank (_type_): _Identification number for env when using multiple environments_
+        """
         super(YellowEnv,self).__init__()
-        
-        
-        
         
         #Creates an array of valid actions
         #had to temporarily remove the start button and pass to speed up learning
@@ -63,6 +70,8 @@ class YellowEnv(Env):
         #variables needed for reward
         self.rank = rank +1
         self.rewardMultiplier = 0.2
+        self.explorationMultiplier = config['expl_mult']
+        self.battleMultiplier = config['batl_mult']
         self.step_count = 0
         self.exploredMaps = [(0,(0,0))]
         self.revisitedMaps = [(0,(0,0))]
@@ -78,10 +87,14 @@ class YellowEnv(Env):
         self.newEnemy = False
         self.levelTotal = 0
         self.resets = -2
+        self.PPPunished = False
+        self.viridianPokeCenter = False
+        self.pewterPokeCenter = False
+        self.viridianForest = False
+        self.pewterGym = False
         
         #used to track reward totals to better discover what the model is prioritizing
         self.rewardTracker = RewardTracker(rank)
-        
         
         #memory addresses
         self.pokemon1Address =0XD163 #checks what pokemon is in slot 1-6
@@ -112,8 +125,16 @@ class YellowEnv(Env):
         self.pokemonSlot4LevelAddress =0xD20F #
         self.pokemonSlot5LevelAddress =0xD23B #
         self.pokemonSlot6LevelAddress =0xD267 #
+        self.PPSlot1Address = 0xD02C 
+        self.PPSlot2Address = 0xD02D 
+        self.PPSlot3Address = 0xD02E 
+        self.PPSlot4Address = 0xD02F 
+        self.move1Address = 0xD01B
+        self.move2Address = 0xD01C
+        self.move3Address = 0xD01D
+        self.move4Address = 0xD01E
         self.oaksParcelAddress = 0XD60C #contains flag for if player has obtained oak's parcel or not
-        
+    
         
         #simple directmedia layer 2, used by pyboy to access graphics/controls/etc
         #can switch to headless to not display game to screen
@@ -137,10 +158,6 @@ class YellowEnv(Env):
         
         #sets screen variable to pyboy's screen manager
         self.screen = self.pyboy.botsupport_manager().screen()
-        
-        
-    
-    
     
     #used to retrieve pixel data to render the environment
     def render(self):
@@ -152,8 +169,8 @@ class YellowEnv(Env):
         return game_pixels_render
 
 # had to have seed = none and options = none to get it to work
-#called when opening environment, or between batches while training. Resets the environment to an initial state
     def reset(self, seed=None, options=None):
+
         super().reset(seed=seed)
         
         with open(self.init_state, "rb") as f:
@@ -177,7 +194,6 @@ class YellowEnv(Env):
         self.mapProgress = 0
         
         return self.render(), {}
-    
     
     def step(self,action):
         """Moves the environment forward using an action from the RL model, and returns outcome to the model
@@ -225,36 +241,38 @@ class YellowEnv(Env):
         Returns:
             float: Reward
         """
-        #can create a list of x/y pos for each map, and if the current isn't in the list, give a reward
+        
         reward = 0
-        reward += self.rewardPUNISHFEAR()
-        reward += self.rewardPosition()
+        #punishes running away from battle
+        reward += (self.rewardPUNISHFEAR() * 0.1) * self.battleMultiplier
+        #can create a list of x/y pos for each map, and if the current isn't in the list, give a reward
+        reward += (self.rewardPosition() *0.01) * self.explorationMultiplier
         #need to prioritize catching a pidgey/rattata/something that can surf
-        reward += self.rewardPokemon()
+        reward += (self.rewardPokemon() * 0.5) * self.battleMultiplier
         #reward based off correct map progression
-        reward += self.rewardProgress()
+        reward += (self.rewardProgress() *1) * self.explorationMultiplier
+        #reward finding pokemon centers
+        reward += (self.rewardPokemonCenters() * 1) * self.explorationMultiplier
         #must prioritize badges
-        reward += self.rewardTrainers()
+        reward += (self.rewardTrainers() * 1) * self.battleMultiplier
         #must deprioritize getting knocked out
-        reward += self.rewardOwnPokemonKO()
+        reward += (self.rewardOwnPokemonKO() *0.1) * self.battleMultiplier
         #prioritize doing higher damage?
-        reward += self.rewardDamage()
-        #deprioritize talking to pikachu?
-        #reward += self.rewardNoPikachu()
+        reward += (self.rewardDamage() *0.1) * self.battleMultiplier
         #prioritize gaining levels
-        reward += self.rewardPartyLevels()
-        #prioritize teaching hms?
-        #reward += self.rewardHMs()
+        reward += (self.rewardPartyLevels() * 0.3) * self.battleMultiplier
         #deprioritize using moves when out of pp
-        #reward += self.rewardPP()
+        reward += (self.rewardPP() *0.1) * self.battleMultiplier
         #prioritize flags
-        #reward += self.rewardFlags()
+        reward += (self.rewardFlags()*1) * self.explorationMultiplier
         
         #used for debugging
         if reward > 0:
             idc = False
         if reward < 0:
             idc = False
+        if self.step_count == 0:
+            reward = 0
             
         self.rewardTracker.totalRewardThisReset += reward
         return reward
@@ -273,7 +291,23 @@ class YellowEnv(Env):
             reward -=1
         
         return reward
-        
+    
+    def rewardPokemonCenters(self):
+        """Generate reward for finding pokemon centers
+
+        Returns:
+            int: Reward
+        """
+        reward = 0
+        currentMap = self.pyboy.get_memory_value(self.currentMapAddress)
+        if currentMap == 41:
+            self.viridianPokeCenter = True
+            reward +=1
+        if currentMap == 58:
+            self.pewterPokeCenter = True
+            reward +=1
+        return reward
+            
     
     def rewardPosition(self):
         """use this to generate reward based off the x/y coordinates of the current map
@@ -283,32 +317,36 @@ class YellowEnv(Env):
         """
         
         #TODO instead of checking through this single list of touples, turn it into a multidimensional list to save on processing time as the model gets further into the game
-        
-       
+        reward = 0
         x_pos = self.pyboy.get_memory_value(self.X_POS_ADDRESS)
         y_pos = self.pyboy.get_memory_value(self.Y_POS_ADDRESS)
         mapCoordinates = x_pos, y_pos
         currentMap = self.pyboy.get_memory_value(self.currentMapAddress)
         currentLocation = (currentMap,(mapCoordinates))
         
+        #Checks if agent has moved
         if currentLocation != self.lastCoordinates:
-            for i in range(len(self.exploredMaps)):
-                if self.exploredMaps[i] == currentLocation:    
-                    #for j in range(len(self.revisitedMaps)):
-                        #if self.revisitedMaps[j] == currentLocation:
-                         #   self.lastCoordinates = currentLocation
-                          #  reward = -1 * self.rewardMultiplier
-                           # self.rewardTracker.TrackerAdd(reward,"ME")
-                            #return reward
+            #Checks if agent has been on this tile before
+            if self.contains(self.exploredMaps, currentLocation):
+                #Checks if agent has been to this tile twice before
+                if self.contains(self.revisitedMaps, currentLocation):
                     self.lastCoordinates = currentLocation
-                    return 0
+                    reward -=0.5 #Punished for revisiting tile
+                    self.rewardTracker.TrackerAdd(reward,"ME")
+                    return reward
+                
+                self.revisitedMaps.append(currentLocation)
+                self.lastCoordinates = currentLocation
+                return 0
+            
             self.exploredMaps.append(currentLocation)
             self.lastCoordinates = currentLocation
-            
-            reward = 1 * self.rewardMultiplier
+            reward +=1 #Rewarded for finding new tile
             self.rewardTracker.TrackerAdd(reward,"ME")
             return reward
+            
         return 0
+    
     
     def rewardProgress(self):
         """Rewards map progress in the game based off time taken to reach there 
@@ -319,17 +357,14 @@ class YellowEnv(Env):
         """
         
         reward = 0
-        #mapTarget = [37,0,12,1,42,12,0,40,0,12,1,13,51,13,2,54]
-        mapTarget = [37,0,12,1,13,51,13,2,54]
+        #mapTarget = [37,0,12,1,42,12,0,40,0,12,1,13,51,13,2,54] #Map order for entire route on earliest state to pewter gym
+        mapTarget = [1,13,51,2,54] # Viridian City, Route 2, Viridian Forest, Pewter City, Pewter Gym
         currentMap = self.pyboy.get_memory_value(self.currentMapAddress)
+        #Checks if agent is currently in the next map target
         if currentMap == mapTarget[self.mapProgress]:
-            reward = 5
+            reward +=1 #Rewards reaching correct map
             self.mapProgress += 1
-            reward = reward * self.mapProgress
             self.rewardTracker.TrackerAdd(reward,"WP")
-            completionPercent = self.step_count * 100 / self.max_steps 
-            rewardModifier = 100 - completionPercent
-            return reward * (rewardModifier /100)
         return reward
         
         
@@ -341,7 +376,6 @@ class YellowEnv(Env):
         Returns:
             int: Reward
         """
-       
         
         #sets variables to be used
         reward = 0
@@ -355,7 +389,7 @@ class YellowEnv(Env):
         pokemon5 = self.pyboy.get_memory_value(self.pokemon5Address)
         pokemon6 = self.pyboy.get_memory_value(self.pokemon6Address)
         
-        #checks if memory address is empty, if not, add it to the list to be checked
+        #checks if memory address is empty, if not, add it to the list to be checked. 0 = empty, 255 = empty but next to be filled
         if pokemon1 != 0 & pokemon1!= 255 & self.contains(teamAddresses,pokemon1):
             teamAddresses.append(pokemon1)
         if pokemon2 != 0 & pokemon2!= 0 & self.contains(teamAddresses,pokemon2):
@@ -373,8 +407,8 @@ class YellowEnv(Env):
         if len(teamAddresses) > len(self.caughtPokemon):
             self.caughtPokemon = teamAddresses
             self.rewardTracker.caughtPokemon +=1
-            
-            
+            #Potentially still useful for states 0-4 if states 5-6 perform well
+            '''''
             for i in teamAddresses:
                 if i == 3:
                     if NidoranM == True:
@@ -400,19 +434,31 @@ class YellowEnv(Env):
                     else :
                         NidoranF = True
                         reward +=1
+                        '''
             #he can abuse this by storing pokemon and taking them out of the pc. Honestly wondering if it can figure that out.
-            reward = 2 + self.rewardTracker.caughtPokemon
+            reward += 1 
+        #Checks if agent boxed a pokemon
         elif len(teamAddresses) < len(self.caughtPokemon):
-            reward -= 3
+            reward -= 1
             self.caughtPokemon = teamAddresses
         self.rewardTracker.TrackerAdd(reward,"PC")
         return reward
     
     def contains(self, list, variable):
+        """Checks to see if a variable is contained in a list
+
+        Args:
+            list (_type_): _description_
+            variable (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         for i in list:
             if i == variable:
                 return False
         return True
+    
     def rewardTrainers(self):
         """use this to generate reward based off specific battles that need to be fought to progress the game
         \nthis can help guide the model through the game by getting badges from gyms
@@ -426,6 +472,8 @@ class YellowEnv(Env):
         #D356 = Badges (Binary Switches)
         reward = 0
         gymMusicPlaying = self.pyboy.get_memory_value(self.gymMusicPlayingAddress)
+        #checks to see if agent is currently in a gym leader battle. This reward is far too high for long term growth
+        #as it is given every step, but will be fine for my current purpose of getting the agent to the gym
         if gymMusicPlaying > 0:
             reward +=1
         return reward
@@ -435,7 +483,6 @@ class YellowEnv(Env):
         Returns:
             int: Reward
         """
-        
 
         reward = 0
         pokemonHP1 = self.pyboy.get_memory_value(self.pokemonHPAddress1)
@@ -448,23 +495,27 @@ class YellowEnv(Env):
         pokemonMaxHPBattle = pokemonMaxHPBattle1 + pokemonMaxHPBattle2
         pokemonMaxHP = pokemonMaxHP1 + pokemonMaxHP2
         
-        audioAddress = 0xC0EF
-        audio = self.pyboy.get_memory_value(audioAddress) #235 EB up one 
+        audio = self.pyboy.get_memory_value(self.audioBankAddress) #235 EB up one 
+        #Checks if own Pokemon's maxHP, and current HP are greater than 0
         if pokemonMaxHP > 0 and pokemonHP > 0:
             self.newBattlePokemon = True
         
         
-        
+        #checks if battle sound bank is loaded, own pokemon has more than 0 hp, and that own pokemon did not win last battle
+        #this ensures that the battle flag can only be turned back on by the condition that turned it off
+        #otherwise, incorrect reward will be given due to multiple methods triggering for each battle ending condition 
         if audio  == 8 and self.newBattlePokemon == True and self.battleWon == False :
             self.battleReset = True
             self.battlelost = False
         
         
-        
+        #checks to see if all prior conditions have been met to start calculating reward
         if self.battleReset == True:
-            if pokemonMaxHP > 0 or pokemonMaxHPBattle > 0: 
+            #checks if pokemon's max hp is above 0
+            if pokemonMaxHP > 0 or pokemonMaxHPBattle > 0:
+                #checks to see if pokemon's current hp is 0
                 if pokemonHP == 0 and self.newBattlePokemon == True:
-                    reward -= 0.5
+                    reward -= 1 #punishes getting knocked out
                     self.rewardTracker.knockedOut += 1
                     self.newBattlePokemon = False
                     self.battlelost = True
@@ -482,38 +533,39 @@ class YellowEnv(Env):
         enemyMaxHP2 = self.pyboy.get_memory_value(self.enemyMaxHPAddress2)
         enemyHP1 = self.pyboy.get_memory_value(self.enemyHPAddress1)
         enemyHP2 = self.pyboy.get_memory_value(self.enemyHPAddress2)
-        enemyStatus = self.pyboy.get_memory_value(self.enemyStatusAddress)
         enemyHP = enemyHP1 + enemyHP2
         enemyMaxHP = enemyMaxHP1 + enemyMaxHP2
         audio = self.pyboy.get_memory_value(self.audioBankAddress) #235 EB up one 
         
-        if enemyMaxHP > 0 and enemyHP > 0:
+        #checks to see if enemy's max hp and current hp are above 0
+        if enemyMaxHP > 0 and enemyHP > 0 and self.newEnemy == False:
             self.newEnemy = True
+            self.enemyLowestHP = enemyHP
     
+        #checks if battle sound bank is loaded, enemy pokemon has more than 0 hp, and that own pokemon did not lose last battle
+        #this ensures that the battle flag can only be turned back on by the condition that turned it off
+        #otherwise, incorrect reward will be given due to multiple methods triggering for each battle ending condition 
         if audio  == 8 and self.newEnemy == True and self.battlelost == False :
             self.battleReset = True
             self.battleWon = False
-            
+        
+        #checks to see if enemy's current hp is new lowest hp
         if enemyHP > self.enemyLowestHP:
             self.enemyLowestHP = enemyHP
         
         if self.battleReset == True:
             #had to check for maxhp to avoid constant reward loop due to default enemy current hp set at 0
             if enemyMaxHP > 0:
+                if enemyHP >= 0 and enemyHP < self.enemyLowestHP and self.newEnemy == True:
+                    reward += 1
+                    self.rewardTracker.attacksPerformed +=1
+                    self.enemyLowestHP = enemyHP
                 if enemyHP == 0 and self.newEnemy == True:
-                    reward += 0.5
+                    reward += 0.25
                     self.rewardTracker.attacksPerformed +=1
                     self.newEnemy = False
                     self.battleReset = False
                     self.battleWon = True
-                elif enemyHP > 0 and enemyHP < self.enemyLowestHP and self.newEnemy == True:
-                    reward += 0.25
-                    self.rewardTracker.attacksPerformed +=1
-                    self.enemyLowestHP = enemyHP
-        #if self.battleInProgress == True:
-         #   if enemyStatus > 0:
-                    
-          #     reward += 2
         self.rewardTracker.TrackerAdd(reward,"DD")
         return reward
         
@@ -544,20 +596,42 @@ class YellowEnv(Env):
             int: Reward
         """
         return
-    #TODO build pp reward
+    
     def rewardPP(self):
         """use this to generate negative reward for trying to use moves that run out of pp
         
         Returns:
             int: Reward
         """
-        #
-        #can be helpful to let it know that pp exists and not to keep slamming tackle 50 million times in a row
-        #D02D 	PP (First Slot) 
-        #D02E 	PP (Second Slot) 
-        #D02F 	PP (Third Slot) 
-        #D030 	PP (Fourth Slot) 
-        return
+        reward = 0
+        
+        move2 = self.pyboy.get_memory_value(self.move2Address)
+        move3 = self.pyboy.get_memory_value(self.move3Address)
+        move4 = self.pyboy.get_memory_value(self.move4Address)
+        
+        
+        PPSlot1 = self.pyboy.get_memory_value(self.PPSlot1Address)
+        PPSlot2 = self.pyboy.get_memory_value(self.PPSlot2Address)
+        PPSlot3 = self.pyboy.get_memory_value(self.PPSlot3Address)
+        PPSlot4 = self.pyboy.get_memory_value(self.PPSlot4Address)
+        
+        if move2 == 0:
+            PPSlot2 =1
+        if move3 == 0:
+            PPSlot3 =1
+        if move4 == 0:
+            PPSlot4 =1
+        
+        
+        
+        if PPSlot1 > 0 and PPSlot2 > 0 and PPSlot3 > 0 and PPSlot4 > 0:
+             self.PPPunished == False
+        if (PPSlot1 == 0 or PPSlot2 == 0 or PPSlot3 == 0 or PPSlot4 == 0) and self.PPPunished == False:
+             reward -=1
+             self.PPPunished == True
+             
+             
+        return reward
     #TODO fix/rebuild flags reward
     def rewardFlags(self):
         """use this to generate reward based off certain ingame flags being triggered
@@ -570,7 +644,7 @@ class YellowEnv(Env):
             if oaksParcel > 0:
                 
                 self.gotParcel = True
-                reward += 50
+                reward += 1
                 self.exploredMaps = [(0,(0,0))]
                 self.revisitedMaps = [(0,(0,0))]
         self.rewardTracker.TrackerAdd(reward,"FR")

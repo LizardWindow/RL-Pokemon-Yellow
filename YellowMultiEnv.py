@@ -79,7 +79,7 @@ if __name__ == '__main__':
         id="Yellow-v0",
         entry_point="rl_pokemon_project.envs.YellowBaselinesEnv:YellowEnv",
     )
-    fileChoice = 2
+    fileChoice = 6
     if fileChoice == 0:
         stateFile = "./states/CatchingTutorial.gb.state"
     elif fileChoice == 1:
@@ -90,6 +90,11 @@ if __name__ == '__main__':
         stateFile = "./states/GotOaksParcel.state"
     elif fileChoice == 4:
         stateFile = "./states/StartWithPokeballs.state"
+    elif fileChoice == 5:
+        stateFile = "./states/TeamCaught.state"
+    elif fileChoice == 6:
+        stateFile = "./states/TeamCaughtLeveled.state"
+    
     else:
         stateFile = "./states/PokemonYellowVersion.gb.state"
     #setup directories
@@ -101,7 +106,8 @@ if __name__ == '__main__':
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
         'gb_path': ROM_PATH, 'max_steps': ep_length,
-        'progressLogs': PROGRESS_LOG
+        'progressLogs': PROGRESS_LOG, 'batl_mult' : 1,
+        'expl_mult': 1
     }
     
     num_cpu = 1
@@ -113,15 +119,13 @@ if __name__ == '__main__':
     CHECKPOINT_DIR = './train/'
     LOG_DIR = './logs/'
     
-
-    ep_length = 2048 *10
     #setup model saving callback
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
     model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=512, n_epochs=3, gamma=0.998, )
     #learning_rate=0.00001,
-    #model= PPO.load('./train/best_model_CurrentProject.zip', env=env, device="cuda")
+    #model= PPO.load('./train/best_model_CurrentProject.zip', env=env)
     model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')
 
