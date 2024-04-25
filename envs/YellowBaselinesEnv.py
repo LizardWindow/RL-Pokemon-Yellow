@@ -306,7 +306,7 @@ class YellowEnv(Env):
         if currentMap == 58:
             self.pewterPokeCenter = True
             reward +=1
-        self.rewardTracker.TrackerAdd(reward, "PC")
+        self.rewardTracker.TrackerAdd(reward, "FC")
         return reward
             
     
@@ -332,7 +332,7 @@ class YellowEnv(Env):
                 #Checks if agent has been to this tile twice before
                 if self.contains(self.revisitedMaps, currentLocation):
                     self.lastCoordinates = currentLocation
-                    reward -=0.5 #Punished for revisiting tile
+                    reward -=0.05 #Punished for revisiting tile
                     self.rewardTracker.TrackerAdd(reward,"ME")
                     return reward
                 
