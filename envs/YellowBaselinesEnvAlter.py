@@ -91,7 +91,7 @@ class YellowEnv(Env):
         self.viridianForest = False
         self.pewterGym = False
         
-        
+        self.flagsReached = 0
         
         self.levels = 0
         self.discoveredMaps = []
@@ -186,6 +186,7 @@ class YellowEnv(Env):
         self.rewardTracker.TrackerAdd(-self.selfKOCount,"DR")
         self.rewardTracker.TrackerAdd(self.enemyKOCount,"DD")
         self.rewardTracker.TrackerAdd(self.levels,"PL")
+        self.rewardTracker.TrackerAdd(self.flagsReached,"FR")
         
         
         with open(self.init_state, "rb") as f:
@@ -212,6 +213,7 @@ class YellowEnv(Env):
         self.enemyKOCount = 0
         self.ranAway = 0
         self.levels = 0
+        self.flagsReached = 0
         
         return self.render(), {}
     
@@ -297,6 +299,7 @@ class YellowEnv(Env):
             reward = 0
             
         self.rewardTracker.totalRewardThisReset += reward
+        reward = reward / self.max_steps
         return reward
     
     
@@ -578,8 +581,6 @@ class YellowEnv(Env):
         move2 = self.pyboy.get_memory_value(self.move2Address)
         move3 = self.pyboy.get_memory_value(self.move3Address)
         move4 = self.pyboy.get_memory_value(self.move4Address)
-        
-        
         PPSlot1 = self.pyboy.get_memory_value(self.PPSlot1Address)
         PPSlot2 = self.pyboy.get_memory_value(self.PPSlot2Address)
         PPSlot3 = self.pyboy.get_memory_value(self.PPSlot3Address)
@@ -607,10 +608,13 @@ class YellowEnv(Env):
             int: Reward
         """
         reward = 0
+        totalFlags = 0
         oaksParcel = self.pyboy.get_memory_value(self.oaksParcelAddress)
         if oaksParcel > 0:
-            reward += 1
-        self.rewardTracker.TrackerAdd(reward,"FR")
+            totalFlags += 1
+        if totalFlags > self.flagsReached:
+            self.flagsReached = totalFlags
+        reward = totalFlags
         return reward
 
     def _seed(self, seed=None):

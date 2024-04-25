@@ -1,0 +1,56 @@
+
+
+---------------------------------------------------------
+---------------------------------------------------------
+Process number = 0
+Total Reward all resets = 3188434
+Total caught Pokemon = 0
+Total attacks performed all resets = 12
+
+Reset Number: 2
+
+Best Run? = True
+Total Reward this reset = 1663964
+Map Progress = 0
+Attacks performed = 5
+Times own Pokemon knocked out = 4
+
+Best run stats:
+
+Best run reset count: 2
+Best run total reward: 1663964
+Best run map progress: 0
+Best run damaging attacks performed: 5
+Best run self ko total = 4
+
+Highest ever totals:
+
+Highest map Progress: 0
+Occurred at reset: 0
+Highest amount of attacks: 7
+Occurred at reset: 1
+Highest amount self ko: 4
+Occurred at reset: 2
+
+Reward Details:
+
+Run Reward Totals Average/First/Current/Change:
+
+Exploration: First run: 37 | Current run: 43
+
+Map exploration reward total: 33.0/30/36/120.0
+World progression reward total: 6.0/6/6/100.0
+Centers Found reward total: 0.0/0/0/0
+Flags reached reward total: 1.0/1/1/100.0
+
+Battle totals: First run: 38 | Current run: 94
+
+Pokemon caught reward total: 0.0/0/0/0
+Pokemon levels reward total: 34.5/32/37/115.625
+Damage dealt reward total: 6.0/7/5/71.42857142857143
+Damage received reward total: -2.5/-1/-4/0
+Gym Leader Fight reward total: 0.0/0/0/0
+Run Away reward total: 45.0/0/56/0
+PP Depleted reward total: 0.0/0/0/0
+---------------------------------------------------------
+---------------------------------------------------------

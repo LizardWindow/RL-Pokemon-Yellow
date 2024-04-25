@@ -147,6 +147,12 @@ class RewardTracker:
             self.hkReset = resets
             self.highestKnockedOut = self.knockedOut
             
+        exploreTotalCurrent = self.rewardTrackerMapExploration + self.rewardTrackerWorldProgression + self.rewardTrackerPokemonCenter + self.rewardTrackerFlagsReached
+        battleTotalCurrent =  self.rewardTrackerPokemonCaught + self.rewardTrackerPokemonLevels + self.rewardTrackerDamageDealt + self.rewardTrackerDamageReceived + self.rewardTrackerTrainers + self.rewardTrackerRunAway + self.rewardTrackerPP
+        
+        exploreTotalFirst = self.fRewardTrackerMapExploration + self.fRewardTrackerWorldProgression + self.fRewardTrackerPokemonCenter + self.fRewardTrackerFlagsReached
+        battleTotalFirst =  self.fRewardTrackerPokemonCaught + self.fRewardTrackerPokemonLevels + self.fRewardTrackerDamageDealt + self.fRewardTrackerDamageReceived + self.fRewardTrackerTrainers + self.fRewardTrackerRunAway + self.fRewardTrackerPP
+          
         
         
         progressLog = open("progressLogProcess" + str(self.rank) + ".txt", "w")
@@ -187,7 +193,8 @@ class RewardTracker:
         progressLog.write("\n")
         progressLog.write("\nRun Reward Totals Average/First/Current/Change:")
         progressLog.write("\n")
-        progressLog.write("\nExploration:")
+        progressLog.write("\nExploration: First run: " + str(exploreTotalFirst) + " | Current run: " + str(exploreTotalCurrent))
+        progressLog.write("\n")
         self.aRewardTrackerMapExploration = self.Averager(self.aRewardTrackerMapExploration,self.rewardTrackerMapExploration, resets)
         progressLog.write(self.TrackerRewardStringBuild("Map exploration", self.fRewardTrackerMapExploration, self.rewardTrackerMapExploration, self.aRewardTrackerMapExploration))
         self.aRewardTrackerWorldProgression = self.Averager(self.aRewardTrackerWorldProgression,self.rewardTrackerWorldProgression, resets)
@@ -196,7 +203,9 @@ class RewardTracker:
         progressLog.write(self.TrackerRewardStringBuild("Centers Found", self.fRewardTrackerPokemonCenter, self.rewardTrackerPokemonCenter,self.aRewardTrackerPokemonCenter))
         self.aRewardTrackerFlagsReached = self.Averager(self.aRewardTrackerFlagsReached,self.rewardTrackerFlagsReached, resets)
         progressLog.write(self.TrackerRewardStringBuild("Flags reached", self.fRewardTrackerFlagsReached, self.rewardTrackerFlagsReached,self.aRewardTrackerFlagsReached))
-        progressLog.write("\nBattle:")
+        progressLog.write("\n")
+        progressLog.write("\nBattle totals: First run: " + str(battleTotalFirst) + " | Current run: " + str(battleTotalCurrent))
+        progressLog.write("\n")
         self.aRewardTrackerPokemonCaught = self.Averager(self.aRewardTrackerPokemonCaught,self.rewardTrackerPokemonCaught, resets)
         progressLog.write(self.TrackerRewardStringBuild("Pokemon caught", self.fRewardTrackerPokemonCaught, self.rewardTrackerPokemonCaught,self.aRewardTrackerPokemonCaught))
         self.aRewardTrackerPokemonLevels = self.Averager(self.aRewardTrackerPokemonLevels,self.rewardTrackerPokemonLevels, resets)

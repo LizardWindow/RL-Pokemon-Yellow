@@ -69,7 +69,6 @@ if __name__ == '__main__':
         stateFile = "./states/TeamCaught.state"
     elif fileChoice == 6:
         stateFile = "./states/TeamCaughtLeveled.state"
-    
     else:
         stateFile = "./states/PokemonYellowVersion.gb.state"
     #setup directories
@@ -77,7 +76,7 @@ if __name__ == '__main__':
     INIT_STATE_FILE_PATH = stateFile #File location of the starting state of the rom
     PROGRESS_LOG = './logs/progressLogs/'
     
-    ep_length = 2048 *1 #episode length of training before env is truncated, needs to be a multiple of batch size, making a multiplier better for changing length
+    ep_length = 2048 *10 #episode length of training before env is truncated, needs to be a multiple of batch size, making a multiplier better for changing length
     
     #sets up configurations for the environment
     env_config = {
@@ -87,7 +86,7 @@ if __name__ == '__main__':
         'expl_mult': 1
     }
     max = psutil.cpu_count()
-    num_cpu = max
+    num_cpu = 1
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
     #env = DummyVecEnv([make_env(env_config,i) for i in range(num_cpu)])
@@ -100,7 +99,7 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
-    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=256, n_epochs=3, gamma=0.998, )
+    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=1024, n_epochs=3, gamma=0.998, )
     #model= PPO.load('./train/best_model_CurrentProject.zip', env=env)
     model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')
