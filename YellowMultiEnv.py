@@ -9,7 +9,7 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3 import PPO
 #import register to register pokemon yellow as a custom gym environment
 from gymnasium.envs.registration import register
-from envs.YellowBaselinesEnv import YellowEnv
+from envs.YellowBaselinesEnvAlter import YellowEnv
 import psutil
 
 from utilities.BaselinesCallback import TrainAndLoggingCallback
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     INIT_STATE_FILE_PATH = stateFile #File location of the starting state of the rom
     PROGRESS_LOG = './logs/progressLogs/'
     
-    ep_length = 2048 *10 #episode length of training before env is truncated, needs to be a multiple of batch size, making a multiplier better for changing length
+    ep_length = 2048 *1 #episode length of training before env is truncated, needs to be a multiple of batch size, making a multiplier better for changing length
     
     #sets up configurations for the environment
     env_config = {
