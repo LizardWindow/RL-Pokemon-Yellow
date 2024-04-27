@@ -115,7 +115,7 @@ class YellowGymEnv(Env):
         self.pyboy.stop()
         super().close()
 ROM_PATH = "PokemonYellowVersion.gb"
-INIT_STATE_FILE_PATH = "./states/StartWithPokeballs.state"
+INIT_STATE_FILE_PATH = "./states/TeamCaughtLeveled.state"
 
 env_config = {
     'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,

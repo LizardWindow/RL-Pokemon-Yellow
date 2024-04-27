@@ -90,6 +90,7 @@ class YellowEnv(Env):
         self.pewterPokeCenter = False
         self.viridianForest = False
         self.pewterGym = False
+        self.discoveredMaps = []
         
         #used to track reward totals to better discover what the model is prioritizing
         self.rewardTracker = RewardTracker(rank)
@@ -137,7 +138,7 @@ class YellowEnv(Env):
         #simple directmedia layer 2, used by pyboy to access graphics/controls/etc
         #can switch to headless to not display game to screen
         head='SDL2'
-        if self.rank > 4:
+        if self.rank > 1:
             head='headless'
         
         #instantiates a pyboy emulator object to run yellow
@@ -190,6 +191,7 @@ class YellowEnv(Env):
             self.rewardTracker.TrackerReset(self.resets)
         self.levelTotal = 0
         self.mapProgress = 0
+        self.discoveredMaps = []
         
         return self.render(), {}
     
@@ -246,13 +248,13 @@ class YellowEnv(Env):
         #punishes running away from battle
         reward += (self.rewardPUNISHFEAR() * 0.1) * self.battleMultiplier
         #can create a list of x/y pos for each map, and if the current isn't in the list, give a reward
-        reward += (self.rewardPosition() *0.01) * self.explorationMultiplier
+        reward += (self.rewardPosition() *0.1) * self.explorationMultiplier
         #need to prioritize catching a pidgey/rattata/something that can surf
         reward += (self.rewardPokemon() * 0.5) * self.battleMultiplier
         #reward based off correct map progression
         reward += (self.rewardProgress() *1) * self.explorationMultiplier
         #reward finding pokemon centers
-        reward += (self.rewardPokemonCenters() * 1) * self.explorationMultiplier
+        #reward += (self.rewardPokemonCenters() * 1) * self.explorationMultiplier
         #must prioritize badges
         reward += (self.rewardTrainers() * 1) * self.battleMultiplier
         #must deprioritize getting knocked out
@@ -262,7 +264,7 @@ class YellowEnv(Env):
         #prioritize gaining levels
         reward += (self.rewardPartyLevels() * 0.3) * self.battleMultiplier
         #deprioritize using moves when out of pp
-        reward += (self.rewardPP() *0.1) * self.battleMultiplier
+       # reward += (self.rewardPP() *0.1) * self.battleMultiplier
         #prioritize flags
         reward += (self.rewardFlags()*1) * self.explorationMultiplier
         
@@ -332,7 +334,7 @@ class YellowEnv(Env):
                 #Checks if agent has been to this tile twice before
                 if self.contains(self.revisitedMaps, currentLocation):
                     self.lastCoordinates = currentLocation
-                    reward -=0.001 #Punished for revisiting tile
+                    #reward -=0.1 #Punished for revisiting tile
                     self.rewardTracker.TrackerAdd(reward,"ME")
                     return reward
                 
@@ -359,13 +361,16 @@ class YellowEnv(Env):
         
         reward = 0
         #mapTarget = [37,0,12,1,42,12,0,40,0,12,1,13,51,13,2,54] #Map order for entire route on earliest state to pewter gym
-        mapTarget = [1,13,51,2,54] # Viridian City, Route 2, Viridian Forest, Pewter City, Pewter Gym
+        mapTarget = [12,1,13,51,2,54] # Viridian City, Route 2, Viridian Forest, Pewter City, Pewter Gym
         currentMap = self.pyboy.get_memory_value(self.currentMapAddress)
         #Checks if agent is currently in the next map target
         if currentMap == mapTarget[self.mapProgress]:
             reward +=1 #Rewards reaching correct map
             self.mapProgress += 1
             self.rewardTracker.TrackerAdd(reward,"WP")
+        if self.contains(self.discoveredMaps, currentMap) == False:
+            self.discoveredMaps.append(currentMap)
+            reward +=len(self.discoveredMaps)
         return reward
         
         
@@ -391,17 +396,17 @@ class YellowEnv(Env):
         pokemon6 = self.pyboy.get_memory_value(self.pokemon6Address)
         
         #checks if memory address is empty, if not, add it to the list to be checked. 0 = empty, 255 = empty but next to be filled
-        if pokemon1 != 0 & pokemon1!= 255 & self.contains(teamAddresses,pokemon1):
+        if pokemon1 != 0 & pokemon1!= 255 & self.contains(teamAddresses,pokemon1) == False:
             teamAddresses.append(pokemon1)
-        if pokemon2 != 0 & pokemon2!= 0 & self.contains(teamAddresses,pokemon2):
+        if pokemon2 != 0 & pokemon2!= 0 & self.contains(teamAddresses,pokemon2) == False:
             teamAddresses.append(pokemon2)
-        if pokemon3 != 0 & pokemon3!= 0 & self.contains(teamAddresses,pokemon3):
+        if pokemon3 != 0 & pokemon3!= 0 & self.contains(teamAddresses,pokemon3) == False:
             teamAddresses.append(pokemon3)
-        if pokemon4 != 0 & pokemon4!= 0 & self.contains(teamAddresses,pokemon4):
+        if pokemon4 != 0 & pokemon4!= 0 & self.contains(teamAddresses,pokemon4) == False:
             teamAddresses.append(pokemon4)
-        if pokemon5 != 0 & pokemon5!= 0 & self.contains(teamAddresses,pokemon5):
+        if pokemon5 != 0 & pokemon5!= 0 & self.contains(teamAddresses,pokemon5) == False:
             teamAddresses.append(pokemon5)
-        if pokemon6 != 0 & pokemon6!= 0 & self.contains(teamAddresses,pokemon6):
+        if pokemon6 != 0 & pokemon6!= 0 & self.contains(teamAddresses,pokemon6) == False:
             teamAddresses.append(pokemon6)
         
         #if ammount of pokemon has increased, give reward and overwrite caughtPokemon list, otherwise, lower reward and overwrite

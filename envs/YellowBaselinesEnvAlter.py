@@ -85,7 +85,7 @@ class YellowEnv(Env):
         self.newEnemy = False
         self.levelTotal = 0
         self.resets = -2
-        self.PPPunished = False
+        self.PP0StepCount = 1
         self.viridianPokeCenter = False
         self.pewterPokeCenter = False
         self.viridianForest = False
@@ -98,6 +98,7 @@ class YellowEnv(Env):
         self.selfKOCount = 0
         self.enemyKOCount = 0
         self.ranAway = 0
+        self.teamAddresses = []
         
         
         
@@ -182,13 +183,13 @@ class YellowEnv(Env):
         super().reset(seed=seed)
         self.rewardTracker.TrackerAdd((len(self.exploredMaps) - len(self.revisitedMaps)),"ME")
         self.rewardTracker.TrackerAdd(self.ranAway, "RA")
-        self.rewardTracker.TrackerAdd(len(self.discoveredMaps),"WP")
+        self.rewardTracker.TrackerAdd(len(self.discoveredMaps)* len(self.discoveredMaps),"WP")
         self.rewardTracker.TrackerAdd(-self.selfKOCount,"DR")
         self.rewardTracker.TrackerAdd(self.enemyKOCount,"DD")
         self.rewardTracker.TrackerAdd(self.levels,"PL")
         self.rewardTracker.TrackerAdd(self.flagsReached,"FR")
-        
-        
+        self.rewardTracker.rewardTrackerPP = self.rewardTracker.rewardTrackerPP / self.PP0StepCount
+                
         with open(self.init_state, "rb") as f:
             self.pyboy.load_state(f)
             self.pyboy.set_emulation_speed(0)
@@ -214,6 +215,8 @@ class YellowEnv(Env):
         self.ranAway = 0
         self.levels = 0
         self.flagsReached = 0
+        self.PP0StepCount = 1
+        self.teamAddresses = []
         
         return self.render(), {}
     
@@ -268,7 +271,7 @@ class YellowEnv(Env):
         
         reward = 0
         #punishes running away from battle
-        reward += (self.rewardPUNISHFEAR() * 1) * self.battleMultiplier
+        #reward += (self.rewardPUNISHFEAR() * 0.1) * self.battleMultiplier
         #can create a list of x/y pos for each map, and if the current isn't in the list, give a reward
         reward += (self.rewardPosition() *1) * self.explorationMultiplier
         #need to prioritize catching a pidgey/rattata/something that can surf
@@ -313,7 +316,7 @@ class YellowEnv(Env):
         if audio  != 8 and self.battlelost == False and self.battleWon == False and self.battleReset == True:
             self.battleReset = False
             self.battlelost = False
-            self.ranAway +=1
+            self.ranAway -=1
         reward = self.ranAway
         return reward
     
@@ -377,7 +380,7 @@ class YellowEnv(Env):
         #Checks if agent is currently in the next map target
         if not self.contains(self.discoveredMaps, currentMap):
             self.discoveredMaps.append(currentMap)
-        reward = len(self.discoveredMaps)
+        reward = len(self.discoveredMaps) * len(self.discoveredMaps)
         return reward
         
     
@@ -392,7 +395,7 @@ class YellowEnv(Env):
         
         #sets variables to be used
         reward = 0
-        teamAddresses = []
+        
         
         #obtains values from all memory addresses
         pokemon1 = self.pyboy.get_memory_value(self.pokemon1Address)
@@ -403,21 +406,21 @@ class YellowEnv(Env):
         pokemon6 = self.pyboy.get_memory_value(self.pokemon6Address)
         
         #checks if memory address is empty, if not, add it to the list to be checked. 0 = empty, 255 = empty but next to be filled
-        if pokemon1 != 0 & pokemon1!= 255 & self.contains(teamAddresses,pokemon1):
-            teamAddresses.append(pokemon1)
-        if pokemon2 != 0 & pokemon2!= 255 & self.contains(teamAddresses,pokemon2):
-            teamAddresses.append(pokemon2)
-        if pokemon3 != 0 & pokemon3!= 255 & self.contains(teamAddresses,pokemon3):
-            teamAddresses.append(pokemon3)
-        if pokemon4 != 0 & pokemon4!= 255 & self.contains(teamAddresses,pokemon4):
-            teamAddresses.append(pokemon4)
-        if pokemon5 != 0 & pokemon5!= 255 & self.contains(teamAddresses,pokemon5):
-            teamAddresses.append(pokemon5)
-        if pokemon6 != 0 & pokemon6!= 255 & self.contains(teamAddresses,pokemon6):
-            teamAddresses.append(pokemon6)
+        if pokemon1 != 0 & pokemon1!= 255 & self.contains(self.teamAddresses,pokemon1) != True:
+            self.teamAddresses.append(pokemon1)
+        if pokemon2 != 0 & pokemon2!= 255 & self.contains(self.teamAddresses,pokemon2)!= True:
+            self.teamAddresses.append(pokemon2)
+        if pokemon3 != 0 & pokemon3!= 255 & self.contains(self.teamAddresses,pokemon3)!= True:
+            self.teamAddresses.append(pokemon3)
+        if pokemon4 != 0 & pokemon4!= 255 & self.contains(self.teamAddresses,pokemon4)!= True:
+            self.teamAddresses.append(pokemon4)
+        if pokemon5 != 0 & pokemon5!= 255 & self.contains(self.teamAddresses,pokemon5)!= True:
+            self.teamAddresses.append(pokemon5)
+        if pokemon6 != 0 & pokemon6!= 255 & self.contains(self.teamAddresses,pokemon6)!= True:
+            self.teamAddresses.append(pokemon6)
         
         
-        reward = len(teamAddresses)
+        reward = len(self.teamAddresses)
         #self.rewardTracker.TrackerAdd(reward,"PC")
         return reward
     
@@ -597,8 +600,8 @@ class YellowEnv(Env):
         
         if (PPSlot1 == 0 or PPSlot2 == 0 or PPSlot3 == 0 or PPSlot4 == 0):
              reward -=1
-             
-        #self.rewardTracker.TrackerAdd(reward, "PP")
+             self.PP0StepCount +=1
+        self.rewardTracker.TrackerAdd(reward, "PP")
         
         return reward
     #TODO fix/rebuild flags reward

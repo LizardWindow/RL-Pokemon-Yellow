@@ -53,7 +53,7 @@ if __name__ == '__main__':
         id="Yellow-v0",
         entry_point="rl_pokemon_project.envs.YellowBaselinesEnv:YellowEnv",
     )
-    fileChoice = 4
+    fileChoice = 6
     if fileChoice == 0:
         stateFile = "./states/CatchingTutorial.gb.state"
     elif fileChoice == 1:
@@ -64,6 +64,10 @@ if __name__ == '__main__':
         stateFile = "./states/GotOaksParcel.state"
     elif fileChoice == 4:
         stateFile = "./states/StartWithPokeballs.state"
+    elif fileChoice == 5:
+        stateFile = "./states/TeamCaught.state"
+    elif fileChoice == 6:
+        stateFile = "./states/TeamCaughtLeveled.state"
     else:
         stateFile = "./states/PokemonYellowVersion.gb.state"
     #setup directories
@@ -91,7 +95,7 @@ if __name__ == '__main__':
     #This punished the model and it learned to avoid that npc, making it scared of bald men.
     
     #ComputerNerd/MallWalker both learned destructive behavior due to a reward value leak.
-    modelChoice = 0
+    modelChoice = 15
     
     if modelChoice == 0:
         env.output_shape = (36, 40, 3) # this and following line are needed to fix where the output shape was grayscaled in recent generations
@@ -145,10 +149,28 @@ if __name__ == '__main__':
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
         model= PPO.load('./train/TooHighLevelsReward.zip', env=env)
+    elif modelChoice == 13:
+        env.output_shape = (36, 40, 1)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/BlindCheck.zip', env=env)
+    elif modelChoice == 14:
+        env.output_shape = (36, 40, 1)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/7hours-1.zip', env=env)
+    elif modelChoice == 15:
+        env.output_shape = (36, 40, 1)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/7hours.zip', env=env)
+    elif modelChoice == 16:
+        env.output_shape = (36, 40, 1)
+        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
+        model= PPO.load('./train/7hours+1.zip', env=env)
+        
     else:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
         model= PPO.load('./train/ViridianTourist.zip', env=env)
+    
     state, [] = env.reset()
     while True:
         action, state = model.predict(state)
