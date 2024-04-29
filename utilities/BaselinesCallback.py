@@ -13,6 +13,7 @@ class TrainAndLoggingCallback(BaseCallback):
         super(TrainAndLoggingCallback, self).__init__(verbose)
         self.check_freq = check_freq
         self.save_path = save_path
+        self.resets = 1
         
     def _init_callback(self):
         if self.save_path is not None:
@@ -20,7 +21,8 @@ class TrainAndLoggingCallback(BaseCallback):
     
     def _on_step(self):
         if self.n_calls % self.check_freq == 0:
-            model_path = os.path.join(self.save_path, 'best_model_{}'.format(self.n_calls))
+            model_path = os.path.join(self.save_path, 'model{}'.format(self.resets))
             self.model.save(model_path)
+            self.resets +=1
             
         return True

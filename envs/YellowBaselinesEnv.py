@@ -138,7 +138,7 @@ class YellowEnv(Env):
         #simple directmedia layer 2, used by pyboy to access graphics/controls/etc
         #can switch to headless to not display game to screen
         head='SDL2'
-        if self.rank > 1:
+        if self.rank > 0:
             head='headless'
         
         #instantiates a pyboy emulator object to run yellow
@@ -246,11 +246,11 @@ class YellowEnv(Env):
         
         reward = 0
         #punishes running away from battle
-        reward += (self.rewardPUNISHFEAR() * 0.1) * self.battleMultiplier
+        #reward += (self.rewardPUNISHFEAR() * 0.1) * self.battleMultiplier
         #can create a list of x/y pos for each map, and if the current isn't in the list, give a reward
         reward += (self.rewardPosition() *0.1) * self.explorationMultiplier
         #need to prioritize catching a pidgey/rattata/something that can surf
-        reward += (self.rewardPokemon() * 0.5) * self.battleMultiplier
+        #reward += (self.rewardPokemon() * 0.5) * self.battleMultiplier
         #reward based off correct map progression
         reward += (self.rewardProgress() *1) * self.explorationMultiplier
         #reward finding pokemon centers
@@ -258,15 +258,15 @@ class YellowEnv(Env):
         #must prioritize badges
         reward += (self.rewardTrainers() * 1) * self.battleMultiplier
         #must deprioritize getting knocked out
-        reward += (self.rewardOwnPokemonKO() *0.1) * self.battleMultiplier
+        #reward += (self.rewardOwnPokemonKO() *0.1) * self.battleMultiplier
         #prioritize doing higher damage?
-        reward += (self.rewardDamage() *0.1) * self.battleMultiplier
+        #reward += (self.rewardDamage() *0.1) * self.battleMultiplier
         #prioritize gaining levels
-        reward += (self.rewardPartyLevels() * 0.3) * self.battleMultiplier
+        #reward += (self.rewardPartyLevels() * 0.3) * self.battleMultiplier
         #deprioritize using moves when out of pp
        # reward += (self.rewardPP() *0.1) * self.battleMultiplier
         #prioritize flags
-        reward += (self.rewardFlags()*1) * self.explorationMultiplier
+        #reward += (self.rewardFlags()*1) * self.explorationMultiplier
         
         #used for debugging
         if reward > 0:
@@ -367,10 +367,11 @@ class YellowEnv(Env):
         if currentMap == mapTarget[self.mapProgress]:
             reward +=1 #Rewards reaching correct map
             self.mapProgress += 1
-            self.rewardTracker.TrackerAdd(reward,"WP")
+            
         if self.contains(self.discoveredMaps, currentMap) == False:
             self.discoveredMaps.append(currentMap)
             reward +=len(self.discoveredMaps)
+        self.rewardTracker.TrackerAdd(reward,"WP")
         return reward
         
         

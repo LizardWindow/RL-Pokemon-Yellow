@@ -104,7 +104,7 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
-    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length, batch_size=128, n_epochs=3, gamma=0.998, )
+    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length//8, batch_size=128, n_epochs=1, gamma=0.998, )
     #model= PPO.load('./train/current.zip', env=env)
-    model.learn(total_timesteps=(ep_length) *num_cpu*5000,callback = callback)
+    model.learn(total_timesteps=(ep_length ) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')
