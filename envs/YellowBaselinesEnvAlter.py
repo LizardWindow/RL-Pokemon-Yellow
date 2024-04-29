@@ -90,7 +90,7 @@ class YellowEnv(Env):
         self.pewterPokeCenter = False
         self.viridianForest = False
         self.pewterGym = False
-        
+        self.highestSeenLevel = 1
         self.flagsReached = 0
         
         self.levels = 0
@@ -99,56 +99,20 @@ class YellowEnv(Env):
         self.enemyKOCount = 0
         self.ranAway = 0
         self.teamAddresses = []
+        self.enemyLevel = 1
         
         
         
         #used to track reward totals to better discover what the model is prioritizing
         self.rewardTracker = RewardTracker(rank)
         
-        #memory addresses
-        self.pokemon1Address =0XD163 #checks what pokemon is in slot 1-6
-        self.pokemon2Address =0XD164 #
-        self.pokemon3Address =0XD165 #
-        self.pokemon4Address =0XD166 #
-        self.pokemon5Address =0XD167 #
-        self.pokemon6Address =0XD168 #
-        self.audioBankAddress = 0xC0EF #contains currently loaded audio bank
-        self.currentMapAddress = 0XD35D #contains currently loaded map
-        self.X_POS_ADDRESS, self.Y_POS_ADDRESS = 0XD361,0XD360 #contains player x/y coordinates
-        self.gymMusicPlayingAddress = 0xD05B #contains value of whether gym leader battle music is playing or not
-        self.pokemonMaxHPBattleAddress1 = 0XD022 # contains max hp of users current pokemon in battle
-        self.pokemonMaxHPBattleAddress2 = 0XD023 #
-        self.pokemonMaxHPAddress1 = 0XD18C #contains values of max and current hp of pokemon in slot 1 of the party
-        self.pokemonMaxHPAddress2 = 0XD18D #
-        self.pokemonHPAddress1 = 0XD014 #
-        self.pokemonHPAddress2 = 0XD015 #
-        self.pokemonStatusAddress = 0XD017 #contains value of status condition inflicted on user's pokemon in slot 1
-        self.enemyMaxHPAddress1 = 0XCFF3 # contains max/current hp of enemy's active pokemon
-        self.enemyMaxHPAddress2 = 0XCFF4 #
-        self.enemyHPAddress1 = 0XCFE5 #
-        self.enemyHPAddress2 = 0XCFE6 #
-        self.enemyStatusAddress = 0XCFE8 #contains value of status condition inflicted on enemy's active pokemon
-        self.pokemonSlot1LevelAddress =0xD18B #contains value for current levels of the pokemon in the party
-        self.pokemonSlot2LevelAddress =0xD1B7 #
-        self.pokemonSlot3LevelAddress =0xD1E3 #
-        self.pokemonSlot4LevelAddress =0xD20F #
-        self.pokemonSlot5LevelAddress =0xD23B #
-        self.pokemonSlot6LevelAddress =0xD267 #
-        self.PPSlot1Address = 0xD02C 
-        self.PPSlot2Address = 0xD02D 
-        self.PPSlot3Address = 0xD02E 
-        self.PPSlot4Address = 0xD02F 
-        self.move1Address = 0xD01B
-        self.move2Address = 0xD01C
-        self.move3Address = 0xD01D
-        self.move4Address = 0xD01E
-        self.oaksParcelAddress = 0XD60C #contains flag for if player has obtained oak's parcel or not
+        
     
         
         #simple directmedia layer 2, used by pyboy to access graphics/controls/etc
         #can switch to headless to not display game to screen
         head='SDL2'
-        if self.rank > 4:
+        if self.rank > 1:
             head='headless'
         
         #instantiates a pyboy emulator object to run yellow
@@ -217,6 +181,8 @@ class YellowEnv(Env):
         self.flagsReached = 0
         self.PP0StepCount = 1
         self.teamAddresses = []
+        self.highestSeenLevel = 1
+        self.enemyLevel = 1
         
         return self.render(), {}
     
@@ -246,6 +212,7 @@ class YellowEnv(Env):
             self.pyboy.tick()
 
         obs_memory = self.render()
+        self.GetAddressValues()
         new_reward = self.reward()
         terminated = False
         truncated = False
@@ -258,84 +225,73 @@ class YellowEnv(Env):
         #return obs_memory, new_reward, terminated, truncated, {}
         return obs_memory, new_reward, terminated, truncated, {}
     
+    def GetAddressValues(self):
+        #memory addresses
+        self.pokemon1Address =self.pyboy.get_memory_value(0XD163) #checks what pokemon is in slot 1-6
+        self.pokemon2Address =self.pyboy.get_memory_value(0XD164) #
+        self.pokemon3Address =self.pyboy.get_memory_value(0XD165) #
+        self.pokemon4Address =self.pyboy.get_memory_value(0XD166) #
+        self.pokemon5Address =self.pyboy.get_memory_value(0XD167) #
+        self.pokemon6Address =self.pyboy.get_memory_value(0XD168) #
+        self.audioBankAddress = self.pyboy.get_memory_value(0xC0EF) #contains currently loaded audio bank
+        self.currentMapAddress = self.pyboy.get_memory_value(0XD35D) #contains currently loaded map
+        self.xAddress = self.pyboy.get_memory_value(0XD361)
+        self.yAddress = self.pyboy.get_memory_value(0XD360) #contains player x/y coordinates
+        self.gymMusicPlayingAddress = self.pyboy.get_memory_value(0xD05B) #contains value of whether gym leader battle music is playing or not
+        self.pokemonMaxHPBattle1Address = self.pyboy.get_memory_value(0XD022) # contains max hp of users current pokemon in battle
+        self.pokemonMaxHPBattle2Address = self.pyboy.get_memory_value(0XD023) #
+        self.pokemonMaxHP1Address = self.pyboy.get_memory_value(0XD18C) #contains values of max and current hp of pokemon in slot 1 of the party
+        self.pokemonMaxHP2Address = self.pyboy.get_memory_value(0XD18D) #
+        self.pokemonHP1Address = self.pyboy.get_memory_value(0XD014) #
+        self.pokemonHP2Address = self.pyboy.get_memory_value(0XD015) #
+        self.pokemonStatusAddress = self.pyboy.get_memory_value(0XD017) #contains value of status condition inflicted on user's pokemon in slot 1
+        self.enemyMaxHP1Address = self.pyboy.get_memory_value(0XCFF3) # contains max/current hp of enemy's active pokemon
+        self.enemyMaxHP2Address = self.pyboy.get_memory_value(0XCFF4) #
+        self.enemyHP1Address = self.pyboy.get_memory_value(0XCFE5) #
+        self.enemyHP2Address = self.pyboy.get_memory_value(0XCFE6) #
+        self.enemyStatusAddress = self.pyboy.get_memory_value(0XCFE8) #contains value of status condition inflicted on enemy's active pokemon
+        self.pokemonSlot1LevelAddress =self.pyboy.get_memory_value(0xD18B) #contains value for current levels of the pokemon in the party
+        self.pokemonSlot2LevelAddress =self.pyboy.get_memory_value(0xD1B7) #
+        self.pokemonSlot3LevelAddress =self.pyboy.get_memory_value(0xD1E3) #
+        self.pokemonSlot4LevelAddress =self.pyboy.get_memory_value(0xD20F) #
+        self.pokemonSlot5LevelAddress =self.pyboy.get_memory_value(0xD23B) #
+        self.pokemonSlot6LevelAddress =self.pyboy.get_memory_value(0xD267) #
+        self.PPSlot1Address = self.pyboy.get_memory_value(0xD02C) 
+        self.PPSlot2Address = self.pyboy.get_memory_value(0xD02D) 
+        self.PPSlot3Address = self.pyboy.get_memory_value(0xD02E )
+        self.PPSlot4Address = self.pyboy.get_memory_value(0xD02F) 
+        self.move1Address = self.pyboy.get_memory_value(0xD01B)
+        self.move2Address = self.pyboy.get_memory_value(0xD01C)
+        self.move3Address = self.pyboy.get_memory_value(0xD01D)
+        self.move4Address = self.pyboy.get_memory_value(0xD01E)
+        self.oaksParcelAddress = self.pyboy.get_memory_value(0XD60C) #contains flag for if player has obtained oak's parcel or not
+        self.enemyLevel = self.pyboy.get_memory_value(0xCFF2)
     
-    #generates reward based off various actions it might take in the environment
     def reward(self):
-        """Runs through various methods to generate reward and returns total reward
-
-        Returns:
-            float: Reward
-        """
-        
-        #Changed reward system heavily last few days, currently experimenting to find better values
-        
         reward = 0
-        #punishes running away from battle
-        #reward += (self.rewardPUNISHFEAR() * 0.1) * self.battleMultiplier
-        #can create a list of x/y pos for each map, and if the current isn't in the list, give a reward
-        reward += (self.rewardPosition() *1) * self.explorationMultiplier
-        #need to prioritize catching a pidgey/rattata/something that can surf
-        reward += (self.rewardPokemon() * 1) * self.battleMultiplier
-        #reward based off correct map progression
-        reward += (self.rewardProgress() *1) * self.explorationMultiplier
-        #reward finding pokemon centers
-        reward += (self.rewardPokemonCenters() * 1) * self.explorationMultiplier
-        #must prioritize badges
-        reward += (self.rewardTrainers() * 1) * self.battleMultiplier
-        #must deprioritize getting knocked out
-        reward += (self.rewardOwnPokemonKO() *1) * self.battleMultiplier
-        #prioritize doing higher damage?
-        reward += (self.rewardDamage() *1) * self.battleMultiplier
-        #prioritize gaining levels
-        reward += (self.rewardPartyLevels() * 1) * self.battleMultiplier
-        #deprioritize using moves when out of pp
-        reward += (self.rewardPP() *1) * self.battleMultiplier
-        #prioritize flags
-        reward += (self.rewardFlags()*1) * self.explorationMultiplier
+        if self.IsBattleOver():
+            if self.rewardPosition() and self.rewardProgress():
+                reward = 1
+            else: 
+                reward = 0
+        else:
+            if self.BattleHandler():
+                reward = 1
+            else:
+                reward = 0
+        #TalkToNPCs
+        #   Not sure how to do this yet
+        self.rewardPartyLevels()
+        #highest level pokemon seen
         
-        #used for debugging
-        if reward > 0:
-            idc = False
-        if reward < 0:
-            idc = False
-        if self.step_count == 0:
-            reward = 0
-            
-        self.rewardTracker.totalRewardThisReset += reward
-        reward = reward / self.max_steps
+        if self.enemyLevel > self.highestSeenLevel:
+            self.highestSeenLevel = self.enemyLevel
+        reward = reward * (self.highestSeenLevel / 100)
+        
         return reward
+        
+        
     
-    
-    def rewardPUNISHFEAR(self):
-        """use this to stop him from running from every single battle he comes across via punishing him for running away
-        Returns:
-            int: Reward
-        """
-        reward =0
-        audio = self.pyboy.get_memory_value(self.audioBankAddress) 
-        if audio  != 8 and self.battlelost == False and self.battleWon == False and self.battleReset == True:
-            self.battleReset = False
-            self.battlelost = False
-            self.ranAway -=1
-        reward = self.ranAway
-        return reward
-    
-    def rewardPokemonCenters(self):
-        """Generate reward for finding pokemon centers
-
-        Returns:
-            int: Reward
-        """
-        reward = 0
-        currentMap = self.pyboy.get_memory_value(self.currentMapAddress)
-        if currentMap == 41:
-            self.viridianPokeCenter = True
-            reward +=1
-        if currentMap == 58:
-            self.pewterPokeCenter = True
-            reward +=1
-        #self.rewardTracker.TrackerAdd(reward, "CF")
-        return reward
             
     
     def rewardPosition(self):
@@ -346,25 +302,15 @@ class YellowEnv(Env):
         """
         
         #TODO instead of checking through this single list of touples, turn it into a multidimensional list to save on processing time as the model gets further into the game
-        reward = 0
-        x_pos = self.pyboy.get_memory_value(self.X_POS_ADDRESS)
-        y_pos = self.pyboy.get_memory_value(self.Y_POS_ADDRESS)
-        mapCoordinates = x_pos, y_pos
-        currentMap = self.pyboy.get_memory_value(self.currentMapAddress)
-        currentLocation = (currentMap,(mapCoordinates))
+        mapCoordinates = self.xAddress, self.yAddress
+        currentLocation = (self.currentMapAddress,(mapCoordinates))
         
-        #Checks if agent has moved
-        if currentLocation != self.lastCoordinates:
-            #Checks if agent has been on this tile before
-            if self.contains(self.exploredMaps, currentLocation):
-                if not self.contains(self.revisitedMaps, currentLocation):
-                    self.revisitedMaps.append(currentLocation)
-                    self.lastCoordinates = currentLocation
-            else:
-                self.exploredMaps.append(currentLocation)
-                self.lastCoordinates = currentLocation
-        reward = len(self.exploredMaps) - len(self.revisitedMaps)
-        return reward
+        
+        #Checks if agent has been on this tile before
+        if self.contains(self.exploredMaps, currentLocation) != True:
+            self.exploredMaps.append(currentLocation)
+            return True
+        return False
     
     
     def rewardProgress(self):
@@ -374,14 +320,11 @@ class YellowEnv(Env):
         Returns:
             int: Reward
         """
-        
-        reward = 0
-        currentMap = self.pyboy.get_memory_value(self.currentMapAddress)
+        validMaps = [0,1,2,3,12,13,14,37,41,49,50,51,54,58,59,60,61]
         #Checks if agent is currently in the next map target
-        if not self.contains(self.discoveredMaps, currentMap):
-            self.discoveredMaps.append(currentMap)
-        reward = len(self.discoveredMaps) * len(self.discoveredMaps)
-        return reward
+        if self.contains(validMaps, self.currentMapAddress):
+            return True
+        return False
         
     
         
@@ -393,51 +336,25 @@ class YellowEnv(Env):
             int: Reward
         """
         
-        #sets variables to be used
-        reward = 0
         
-        
-        #obtains values from all memory addresses
-        pokemon1 = self.pyboy.get_memory_value(self.pokemon1Address)
-        pokemon2 = self.pyboy.get_memory_value(self.pokemon2Address)
-        pokemon3 = self.pyboy.get_memory_value(self.pokemon3Address)
-        pokemon4 = self.pyboy.get_memory_value(self.pokemon4Address)
-        pokemon5 = self.pyboy.get_memory_value(self.pokemon5Address)
-        pokemon6 = self.pyboy.get_memory_value(self.pokemon6Address)
         
         #checks if memory address is empty, if not, add it to the list to be checked. 0 = empty, 255 = empty but next to be filled
-        if pokemon1 != 0 & pokemon1!= 255 & self.contains(self.teamAddresses,pokemon1) != True:
-            self.teamAddresses.append(pokemon1)
-        if pokemon2 != 0 & pokemon2!= 255 & self.contains(self.teamAddresses,pokemon2)!= True:
-            self.teamAddresses.append(pokemon2)
-        if pokemon3 != 0 & pokemon3!= 255 & self.contains(self.teamAddresses,pokemon3)!= True:
-            self.teamAddresses.append(pokemon3)
-        if pokemon4 != 0 & pokemon4!= 255 & self.contains(self.teamAddresses,pokemon4)!= True:
-            self.teamAddresses.append(pokemon4)
-        if pokemon5 != 0 & pokemon5!= 255 & self.contains(self.teamAddresses,pokemon5)!= True:
-            self.teamAddresses.append(pokemon5)
-        if pokemon6 != 0 & pokemon6!= 255 & self.contains(self.teamAddresses,pokemon6)!= True:
-            self.teamAddresses.append(pokemon6)
+        if self.pokemon1Address != 0 & self.pokemon1Address!= 255 & self.contains(self.teamAddresses,self.pokemon1Address) != True:
+            self.teamAddresses.append(self.pokemon1Address)
+        if self.pokemon2Address != 0 & self.pokemon2Address!= 255 & self.contains(self.teamAddresses,self.pokemon2Address)!= True:
+            self.teamAddresses.append(self.pokemon2Address)
+        if self.pokemon3Address != 0 & self.pokemon3Address!= 255 & self.contains(self.teamAddresses,self.pokemon3Address)!= True:
+            self.teamAddresses.append(self.pokemon3Address)
+        if self.pokemon4Address != 0 & self.pokemon4Address!= 255 & self.contains(self.teamAddresses,self.pokemon4Address)!= True:
+            self.teamAddresses.append(self.pokemon4Address)
+        if self.pokemon5Address != 0 & self.pokemon5Address!= 255 & self.contains(self.teamAddresses,self.pokemon5Address)!= True:
+            self.teamAddresses.append(self.pokemon5Address)
+        if self.pokemon6Address != 0 & self.pokemon6Address!= 255 & self.contains(self.teamAddresses,self.pokemon6Address)!= True:
+            self.teamAddresses.append(self.pokemon6Address)
         
         
-        reward = len(self.teamAddresses)
-        #self.rewardTracker.TrackerAdd(reward,"PC")
-        return reward
     
-    def contains(self, list, variable):
-        """Checks to see if a variable is contained in a list
-
-        Args:
-            list (_type_): _description_
-            variable (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        for i in list:
-            if i == variable:
-                return True
-        return False
+    
     
     def rewardTrainers(self):
         """use this to generate reward based off specific battles that need to be fought to progress the game
@@ -451,101 +368,68 @@ class YellowEnv(Env):
         #there is no way to lose badges, so every change is when you gain a badge
         #D356 = Badges (Binary Switches)
         reward = 0
-        gymMusicPlaying = self.pyboy.get_memory_value(self.gymMusicPlayingAddress)
         #checks to see if agent is currently in a gym leader battle. This reward is far too high for long term growth
         #as it is given every step, but will be fine for my current purpose of getting the agent to the gym
-        if gymMusicPlaying > 0:
+        if self.gymMusicPlayingAddress > 0:
             reward +=1
         self.rewardTracker.TrackerAdd(reward, "T")
         return reward
-    def rewardOwnPokemonKO(self):
-        """use this to punish letting own pokemon get knocked out
+    
+    def BattleHandler(self):
+        if self.newBattlePokemon == False or self.newEnemy == False:
+            return False
+        if self.rewardEnemyDamage() or self.rewardEnemyKO():
+            return True
+        if self.rewardSelfKO():
+            return False
+    
+    def rewardEnemyKO(self):
+        if self.enemyHP1Address + self.enemyHP2Address > 0:
+            self.newEnemy == True
+        if self.enemyHP1Address + self.enemyHP2Address == 0 and self.newEnemy == True:
+            self.newEnemy = False
+            self.battlelost = False
+            self.battleWon = True
+            return True
+        return False
+    def rewardSelfKO(self):
+        #Checks if own Pokemon's current HP is greater than 0
         
-        Returns:
-            int: Reward
-        """
-
-        reward = 0
-        pokemonHP1 = self.pyboy.get_memory_value(self.pokemonHPAddress1)
-        pokemonHP2 = self.pyboy.get_memory_value(self.pokemonHPAddress2)
-        pokemonMaxHPBattle1 = self.pyboy.get_memory_value(self.pokemonMaxHPBattleAddress1)
-        pokemonMaxHPBattle2 = self.pyboy.get_memory_value(self.pokemonMaxHPBattleAddress2)
-        pokemonMaxHP1 = self.pyboy.get_memory_value(self.pokemonMaxHPAddress1)
-        pokemonMaxHP2 = self.pyboy.get_memory_value(self.pokemonMaxHPAddress2)
-        pokemonHP = pokemonHP1 + pokemonHP2
-        pokemonMaxHPBattle = pokemonMaxHPBattle1 + pokemonMaxHPBattle2
-        pokemonMaxHP = pokemonMaxHP1 + pokemonMaxHP2
-        
-        audio = self.pyboy.get_memory_value(self.audioBankAddress) #235 EB up one 
-        #Checks if own Pokemon's maxHP, and current HP are greater than 0
-        if pokemonMaxHP > 0 and pokemonHP > 0:
+        if self.pokemonHP1Address + self.pokemonHP2Address > 0:
             self.newBattlePokemon = True
         
-        
-        #checks if battle sound bank is loaded, own pokemon has more than 0 hp, and that own pokemon did not win last battle
-        #this ensures that the battle flag can only be turned back on by the condition that turned it off
-        #otherwise, incorrect reward will be given due to multiple methods triggering for each battle ending condition 
-        if audio  == 8 and self.newBattlePokemon == True and self.battleWon == False :
-            self.battleReset = True
-            self.battlelost = False
-        
-        
-        #checks to see if all prior conditions have been met to start calculating reward
-        if self.battleReset == True:
-            #checks if pokemon's max hp is above 0
-            if pokemonMaxHP > 0 or pokemonMaxHPBattle > 0:
-                #checks to see if pokemon's current hp is 0
-                if pokemonHP == 0 and self.newBattlePokemon == True:
-                    self.selfKOCount +=1
-                    self.rewardTracker.knockedOut += 1
-                    self.newBattlePokemon = False
-                    self.battlelost = True
-                    self.battleReset = False
-                    
-        reward -= self.selfKOCount
-
-        return reward
-    def rewardDamage(self):
-        """Generates reward based off damage done to opposing pokemon and further reward upon knocking out opposing pokemon
-        Returns:
-            int: Reward
-        """   
-        reward = 0
-        enemyMaxHP1 = self.pyboy.get_memory_value(self.enemyMaxHPAddress1)
-        enemyMaxHP2 = self.pyboy.get_memory_value(self.enemyMaxHPAddress2)
-        enemyHP1 = self.pyboy.get_memory_value(self.enemyHPAddress1)
-        enemyHP2 = self.pyboy.get_memory_value(self.enemyHPAddress2)
-        enemyHP = enemyHP1 + enemyHP2
-        enemyMaxHP = enemyMaxHP1 + enemyMaxHP2
-        audio = self.pyboy.get_memory_value(self.audioBankAddress) #235 EB up one 
-        
-        #checks to see if enemy's max hp and current hp are above 0
-        if enemyMaxHP > 0 and enemyHP > 0 and self.newEnemy == False:
-            self.newEnemy = True
-            self.enemyLowestHP = enemyHP
-    
-        #checks if battle sound bank is loaded, enemy pokemon has more than 0 hp, and that own pokemon did not lose last battle
-        #this ensures that the battle flag can only be turned back on by the condition that turned it off
-        #otherwise, incorrect reward will be given due to multiple methods triggering for each battle ending condition 
-        if audio  == 8 and self.newEnemy == True and self.battlelost == False :
-            self.battleReset = True
+        if self.pokemonHP1Address + self.pokemonHP2Address == 0 and self.newBattlePokemon:
+            self.selfKOCount +=1
+            self.rewardTracker.knockedOut += 1
+            self.battlelost = True
             self.battleWon = False
-        
-        #checks to see if enemy's current hp is new lowest hp
+            self.newBattlePokemon = False
+            return True
+        return False
+    
+    def rewardEnemyDamage(self):
+        enemyHP = self.enemyHP1Address + self.enemyHP2Address
         if enemyHP > self.enemyLowestHP:
             self.enemyLowestHP = enemyHP
+            return False
+        if enemyHP < self.enemyLowestHP:
+            self.enemyLowestHP = enemyHP
+            return True
+        return False
         
-        if self.battleReset == True:
-            #had to check for maxhp to avoid constant reward loop due to default enemy current hp set at 0
-                if enemyHP == 0 and self.newEnemy == True:
-                    self.enemyKOCount +=1
-                    self.rewardTracker.attacksPerformed +=1
-                    self.newEnemy = False
-                    self.battleReset = False
-                    self.battleWon = True
-        reward = self.enemyKOCount
-        
-        return reward
+    
+    def IsBattleOver(self):
+        if self.audioBankAddress == 8:
+            False   
+        else:
+            return True
+    
+    
+    def rewardConversation(self):
+        return
+    def rewardHealing(self):
+        return
+    
         
     def rewardPartyLevels(self):
         """Generates reward based off highest ever party combined levels
@@ -553,25 +437,12 @@ class YellowEnv(Env):
             int: Reward
         """
         reward = 0
-        slot1 = self.pyboy.get_memory_value(self.pokemonSlot1LevelAddress)
-        slot2 = self.pyboy.get_memory_value(self.pokemonSlot2LevelAddress)
-        slot3 = self.pyboy.get_memory_value(self.pokemonSlot3LevelAddress)
-        slot4 = self.pyboy.get_memory_value(self.pokemonSlot4LevelAddress)
-        slot5 = self.pyboy.get_memory_value(self.pokemonSlot5LevelAddress)
-        slot6 = self.pyboy.get_memory_value(self.pokemonSlot6LevelAddress)
-        self.levels = slot1+slot2+slot3+slot4+slot5+slot6
-        
+
+        self.levels = self.pokemonSlot1LevelAddress+self.pokemonSlot2LevelAddress+self.pokemonSlot3LevelAddress+self.pokemonSlot4LevelAddress
+        +self.pokemonSlot5LevelAddress+self.pokemonSlot6LevelAddress
         reward = self.levels
         
         return reward
-
-    #TODO build hm reward
-    def rewardHMs(self):
-        """use this to generate reward for teaching required hms to pokemon
-        Returns:
-            int: Reward
-        """
-        return
     
     def rewardPP(self):
         """use this to generate negative reward for trying to use moves that run out of pp
@@ -581,24 +452,18 @@ class YellowEnv(Env):
         """
         reward = 0
         
-        move2 = self.pyboy.get_memory_value(self.move2Address)
-        move3 = self.pyboy.get_memory_value(self.move3Address)
-        move4 = self.pyboy.get_memory_value(self.move4Address)
-        PPSlot1 = self.pyboy.get_memory_value(self.PPSlot1Address)
-        PPSlot2 = self.pyboy.get_memory_value(self.PPSlot2Address)
-        PPSlot3 = self.pyboy.get_memory_value(self.PPSlot3Address)
-        PPSlot4 = self.pyboy.get_memory_value(self.PPSlot4Address)
         
-        if move2 == 0:
-            PPSlot2 =1
-        if move3 == 0:
-            PPSlot3 =1
-        if move4 == 0:
-            PPSlot4 =1
+        
+        if self.move2Address == 0:
+            self.PPSlot2Address =1
+        if self.move3Address == 0:
+            self.PPSlot3Address =1
+        if self.move4Address == 0:
+            self.PPSlot4Address =1
         
         
         
-        if (PPSlot1 == 0 or PPSlot2 == 0 or PPSlot3 == 0 or PPSlot4 == 0):
+        if (self.PPSlot1Address == 0 or self.PPSlot2Address == 0 or self.PPSlot3Address == 0 or self.PPSlot4Address == 0):
              reward -=1
              self.PP0StepCount +=1
         self.rewardTracker.TrackerAdd(reward, "PP")
@@ -612,8 +477,8 @@ class YellowEnv(Env):
         """
         reward = 0
         totalFlags = 0
-        oaksParcel = self.pyboy.get_memory_value(self.oaksParcelAddress)
-        if oaksParcel > 0:
+
+        if self.oaksParcelAddress > 0:
             totalFlags += 1
         if totalFlags > self.flagsReached:
             self.flagsReached = totalFlags
@@ -636,3 +501,17 @@ class YellowEnv(Env):
         """
         self.pyboy.stop()
         super().close()
+    def contains(self, list, variable):
+        """Checks to see if a variable is contained in a list
+
+        Args:
+            list (_type_): _description_
+            variable (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        for i in list:
+            if i == variable:
+                return True
+        return False

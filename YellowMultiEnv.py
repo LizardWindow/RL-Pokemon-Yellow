@@ -9,7 +9,7 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3 import PPO
 #import register to register pokemon yellow as a custom gym environment
 from gymnasium.envs.registration import register
-from envs.YellowBaselinesEnv import YellowEnv
+from envs.YellowBaselinesEnvAlter import YellowEnv
 import psutil
 
 from utilities.BaselinesCallback import TrainAndLoggingCallback
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     
     
     max = psutil.cpu_count()
-    num_cpu = max
+    num_cpu = 1
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
     #env = DummyVecEnv([make_env(env_config,i) for i in range(num_cpu)])
