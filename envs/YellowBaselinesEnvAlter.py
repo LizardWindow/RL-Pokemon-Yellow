@@ -166,7 +166,6 @@ class YellowEnv(Env):
         self.newEnemy = False
         self.resets += 1
         if self.resets > 0:
-            self.rewardTracker.mapProgress = self.mapProgress
             self.rewardTracker.TrackerReset(self.resets)
         self.levelTotal = 0
         self.mapProgress = 0
@@ -302,6 +301,7 @@ class YellowEnv(Env):
         reward = reward * self.GenerateModifier()   
         self.rewardTracker.totalReward += reward
         
+        #These are just to have break points for debugging positive/negative reward
         if reward > 0:
             re = True
         if reward < 0:
@@ -519,7 +519,7 @@ class YellowEnv(Env):
             self.PPSlot3Address =1
         if self.move4Address == 0:
             self.PPSlot4Address =1
-        
+            
         if (self.PPSlot1Address == 0 or self.PPSlot2Address == 0 or self.PPSlot3Address == 0 or self.PPSlot4Address == 0):
              reward -=1
              self.PP0StepCount +=1
