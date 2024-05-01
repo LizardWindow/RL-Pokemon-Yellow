@@ -17,7 +17,6 @@ class RewardTracker:
         self.dateTime = time.localtime()
         self.settings = modelSettings
         
-        self.visitedMaps = []
         self.battlesFought=0
         self.battlesLost=0
         self.battlesWon=0
@@ -152,7 +151,9 @@ class RewardTracker:
         progressLog.write("\nAverage Run Stats:\n")
         self.RewardWriter(progressLog,self.averageRun)
         progressLog.write("\n---------------------------------------------------------")
-        self.visitedMaps = []
+        for k, v in self.mapTotals.items():
+                self.mapTotals[k] = 0
+        
     
     
     def RewardWriter(self,log,dictionary):

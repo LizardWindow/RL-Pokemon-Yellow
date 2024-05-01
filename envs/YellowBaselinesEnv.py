@@ -192,6 +192,10 @@ class YellowEnv(Env):
         self.levelTotal = 0
         self.mapProgress = 0
         self.discoveredMaps = []
+        self.battleWon = False
+        self.battlelost = False
+        self.PPPunished = False
+        
         
         return self.render(), {}
     

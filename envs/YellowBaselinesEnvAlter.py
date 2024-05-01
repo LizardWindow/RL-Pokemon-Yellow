@@ -182,6 +182,8 @@ class YellowEnv(Env):
         self.enemyLevel = 1
         self.battleEntered = False
         self.battleDrawn = False
+        self.battleWon = False
+        self.battlelost = False
         
         return self.render(), {}
     
@@ -292,6 +294,12 @@ class YellowEnv(Env):
         
         reward = reward * self.GenerateModifier()   
         self.rewardTracker.totalReward += reward
+        
+        if reward > 0:
+            re = True
+        if reward < 0:
+            re = False
+        
         return reward
         
         
@@ -338,8 +346,8 @@ class YellowEnv(Env):
         self.rewardTracker.mapStepCount +=1
         #Checks if agent is currently in the next map target
         if self.contains(self.validMaps, self.currentMapAddress):
-            self.discoveredMaps.append(self.currentMapAddress)
-            self.rewardTracker.visitedMaps.append(self.currentMapAddress)
+            if self.contains(self.discoveredMaps,self.currentMapAddress) != True:
+                self.discoveredMaps.append(self.currentMapAddress)
             self.rewardTracker.mapTotals[self.currentMapAddress] +=1
             return True
         return False
