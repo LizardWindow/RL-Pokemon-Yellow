@@ -85,21 +85,22 @@ if __name__ == '__main__':
         "Policy" : "CnnPolicy",
         "Verbose" : 1,
         "Number of Steps": ep_length,
-        "Batch size" : 128,
-        "Number of Epochs" : 1,
+        "Batch size" : 512,
+        "Number of Epochs" : 3,
         "Gamma" : 0.998,
+        "Learning Rate" : 0.0003
     }
     
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
         'gb_path': ROM_PATH, 'max_steps': ep_length,
         'progressLogs': PROGRESS_LOG, 'batl_mult' : 1,
-        'expl_mult': 1, "head": 1, "model_config": model_config
+        'expl_mult': 1, "head": 4, "model_config": model_config
     }
     
     
     max = psutil.cpu_count()
-    num_cpu = 1
+    num_cpu = max
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
     #env = DummyVecEnv([make_env(env_config,i) for i in range(num_cpu)])
@@ -112,7 +113,16 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
-    model = PPO(model_config["Policy"], env, verbose=model_config["Verbose"], tensorboard_log=LOG_DIR,n_steps=model_config["Number of Steps"]//8, batch_size=model_config["Batch size"], n_epochs=model_config["Number of Epochs"], gamma=model_config["Gamma"], )
+    model = PPO(
+        model_config["Policy"], 
+        env, 
+        verbose=model_config["Verbose"], 
+        tensorboard_log=LOG_DIR,
+        n_steps=model_config["Number of Steps"], 
+        batch_size=model_config["Batch size"], 
+        n_epochs=model_config["Number of Epochs"], 
+        gamma=model_config["Gamma"], 
+        learning_rate=model_config["Learning Rate"])
+    
     #model= PPO.load('./train/current.zip', env=env)
     model.learn(total_timesteps=(ep_length ) *num_cpu*5000,callback = callback)
-    #model.load('./train/best_model_55000.zip')

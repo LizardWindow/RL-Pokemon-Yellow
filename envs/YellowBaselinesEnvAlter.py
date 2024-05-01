@@ -115,7 +115,7 @@ class YellowEnv(Env):
         #simple directmedia layer 2, used by pyboy to access graphics/controls/etc
         #can switch to headless to not display game to screen
         head='SDL2'
-        if self.rank > 1:
+        if self.rank > config["head"]:
             head='headless'
         
         #instantiates a pyboy emulator object to run yellow
