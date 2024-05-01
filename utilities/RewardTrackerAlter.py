@@ -151,8 +151,10 @@ class RewardTracker:
         progressLog.write("\nAverage Run Stats:\n")
         self.RewardWriter(progressLog,self.averageRun)
         progressLog.write("\n---------------------------------------------------------")
+        #not sure why this isn't being added to git
         for k, v in self.mapTotals.items():
                 self.mapTotals[k] = 0
+                
         
     
     
