@@ -11,7 +11,7 @@ import numpy as np
 from stable_baselines3 import PPO
 #import register to register pokemon yellow as a custom gym environment
 from gymnasium.envs.registration import register
-from envs.YellowBaselinesEnv import YellowEnv
+from envs.YellowBaselinesEnvAlter import YellowEnv
 from IPython.display import clear_output
 
 
@@ -76,11 +76,20 @@ if __name__ == '__main__':
     PROGRESS_LOG = './logs/progressLogs/'
     ep_length = 2048 *10
     #sets up configurations for the environment
+    model_config = {
+        "Policy" : "CnnPolicy",
+        "Verbose" : 1,
+        "Number of Steps": ep_length,
+        "Batch size" : 256,
+        "Number of Epochs" : 1,
+        "Gamma" : 0.998,
+    }
+    
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
         'gb_path': ROM_PATH, 'max_steps': ep_length,
         'progressLogs': PROGRESS_LOG, 'batl_mult' : 1,
-        'expl_mult': 1
+        'expl_mult': 1, "head": 1, "model_config": model_config
     }
     
     
@@ -164,7 +173,7 @@ if __name__ == '__main__':
     elif modelChoice == 16:
         env.output_shape = (36, 40, 1)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/42.zip', env=env)
+        model= PPO.load('./train/model11.zip', env=env)
         
     else:
         env.output_shape = (36, 40, 3)
