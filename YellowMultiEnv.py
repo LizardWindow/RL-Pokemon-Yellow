@@ -83,12 +83,12 @@ if __name__ == '__main__':
     #sets up configurations for the environment
     model_config = {
         "Policy" : "CnnPolicy",
-        "Verbose" : 1,
-        "Number of Steps": ep_length,
-        "Batch size" : 512,
-        "Number of Epochs" : 3,
-        "Gamma" : 0.998,
-        "Learning Rate" : 0.0003
+        "Verbose" : 1, #Level of debug messages to be shown in the console
+        "Number of Steps": ep_length, #Number of steps before triggering the gradient
+        "Batch size" : 512, #Size of the gradient
+        "Number of Epochs" : 3, #Number of passes through the gradient
+        "Gamma" : 0.998, #Discount Factor used by some calculations in 
+        "Learning Rate" : 0.0003 #Speed at which model learns
     }
     
     env_config = {
@@ -113,7 +113,8 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
-    model = PPO(
+    
+    model = PPO( #Proximal Policy Optimization, Reinforcement learning algorithm
         model_config["Policy"], 
         env, 
         verbose=model_config["Verbose"], 

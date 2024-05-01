@@ -104,7 +104,7 @@ if __name__ == '__main__':
     #This punished the model and it learned to avoid that npc, making it scared of bald men.
     
     #ComputerNerd/MallWalker both learned destructive behavior due to a reward value leak.
-    modelChoice = 9
+    modelChoice = 8
     
     if modelChoice == 0:
         env.output_shape = (36, 40, 3) # this and following line are needed to fix where the output shape was grayscaled in recent generations
