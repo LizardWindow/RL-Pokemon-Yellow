@@ -7,3 +7,4 @@ pyboy==1.6.14
 skimage==0.0
 stable_baselines3==2.3.0
 #pip install all requirements, find a copy of pokemon yellow and name it "PokemonYellowVersion.gb" and place it in the top directory next to the .ram file
+#python 3.12.1

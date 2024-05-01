@@ -151,7 +151,6 @@ class RewardTracker:
         progressLog.write("\nAverage Run Stats:\n")
         self.RewardWriter(progressLog,self.averageRun)
         progressLog.write("\n---------------------------------------------------------")
-        #not sure why this isn't being added to git
         for k, v in self.mapTotals.items():
                 self.mapTotals[k] = 0
                 
@@ -159,11 +158,22 @@ class RewardTracker:
     
     
     def RewardWriter(self,log,dictionary):
+        """Writes tracked items in reward dictionaries to a file
+
+        Args:
+            log (_type_): _description_
+            dictionary (_type_): _description_
+        """
         for k, v in dictionary.items():
             log.write("\n"+str(k) + ": "+ str(v))
         log.write("\n---------------------------------------------------------")
             
     def GetValues(self, resets):
+        """Updates dictionary values
+
+        Args:
+            resets (_type_): _description_
+        """
         self.currentRun = {
             "Battles Fought": self.battlesFought, 
             "Battles Lost" : self.battlesLost,

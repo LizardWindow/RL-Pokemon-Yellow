@@ -104,77 +104,48 @@ if __name__ == '__main__':
     #This punished the model and it learned to avoid that npc, making it scared of bald men.
     
     #ComputerNerd/MallWalker both learned destructive behavior due to a reward value leak.
-    modelChoice = 16
+    modelChoice = 9
     
     if modelChoice == 0:
         env.output_shape = (36, 40, 3) # this and following line are needed to fix where the output shape was grayscaled in recent generations
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8) # causing the model and current env to be incompatible
-        model= PPO.load('./train/noticeableSuccess.zip', env=env)
+        model= PPO.load('./train/noticeableSuccess.zip', env=env) #Good at battling, beats rival
     elif modelChoice ==1:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/Fred.zip', env=env)
+        model= PPO.load('./train/LovesStairs.zip', env=env) #He really does...
     elif modelChoice == 2:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/ScaredOfBaldMen.zip', env=env)
+        model= PPO.load('./train/MallWalker.zip', env=env) #One of my earliest
     elif modelChoice == 3:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/ComputerNerd.zip', env=env)
+        model= PPO.load('./train/ComputerNerd.zip', env=env) #Just plays his snes while pikachu dances
     elif modelChoice == 4:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/CurrentProject.zip', env=env)
+        model= PPO.load('./train/CurrentProject.zip', env=env) #Early in training, runs from battles
     elif modelChoice == 5:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/IAmBlind.zip', env=env)
+        model= PPO.load('./train/LikesToFight.zip', env=env)#Will Fight until death and then try again
     elif modelChoice == 6:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/LikesToFight.zip', env=env)
+        model= PPO.load('./train/ScaredOfBaldMen.zip', env=env) #Good at battling and exploring but scared of bald men
     elif modelChoice == 7:
-        env.output_shape = (36, 40, 3)
+        env.output_shape = (36, 40, 1)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/MallWalker.zip', env=env)
+        model= PPO.load('./train/GamingTheSystem.zip', env=env) #Mallwalker 2.0
     elif modelChoice == 8:
-        env.output_shape = (36, 40, 3)
+        env.output_shape = (36, 40, 1)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/OopsAllSingle.zip', env=env)
+        model= PPO.load('./train/Gamer.zip', env=env) #Tried to fix gaming the system, created a gamer
     elif modelChoice == 9:
-        env.output_shape = (36, 40, 3)
-        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/PunishedMovement.zip', env=env)
-    elif modelChoice == 10:
         env.output_shape = (36, 40, 1)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/TestBest1.zip', env=env)
-    elif modelChoice == 11:
-        env.output_shape = (36, 40, 1)
-        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/TestBest2.zip', env=env)
-    elif modelChoice == 12:
-        env.output_shape = (36, 40, 3)
-        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/TooHighLevelsReward.zip', env=env)
-    elif modelChoice == 13:
-        env.output_shape = (36, 40, 1)
-        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/BlindCheck.zip', env=env)
-    elif modelChoice == 14:
-        env.output_shape = (36, 40, 1)
-        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/7hours-1.zip', env=env)
-    elif modelChoice == 15:
-        env.output_shape = (36, 40, 1)
-        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/7hours.zip', env=env)
-    elif modelChoice == 16:
-        env.output_shape = (36, 40, 1)
-        env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)
-        model= PPO.load('./train/model11.zip', env=env)
-        
+        model= PPO.load('./train/7hours-1.zip', env=env) #Makes it to forest, the best so far
     else:
         env.output_shape = (36, 40, 3)
         env.observation_space = spaces.Box(low=0,high=255,shape=env.output_shape,dtype=np.uint8)

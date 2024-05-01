@@ -227,6 +227,8 @@ class YellowEnv(Env):
         return obs_memory, new_reward, terminated, truncated, {}
     
     def GetAddressValues(self):
+        """Gets Values from required memory addresses
+        """
         #memory addresses
         self.pokemon1Address =self.pyboy.get_memory_value(0XD163) #checks what pokemon is in slot 1-6
         self.pokemon2Address =self.pyboy.get_memory_value(0XD164) #
@@ -269,6 +271,11 @@ class YellowEnv(Env):
         self.enemyLevel = self.pyboy.get_memory_value(0xCFF2)
     
     def reward(self):
+        """Generates reward for the model based off of battle or exploration conditions
+
+        Returns:
+            _type_: _description_
+        """
         reward = 0
         if self.IsBattleOver():
             if self.battleWon == False and self.battlelost == False and self.battleDrawn == False:
@@ -304,6 +311,11 @@ class YellowEnv(Env):
         
         
     def GenerateModifier(self):
+        """Generates a multiplier for the reward based off various game states
+
+        Returns:
+            _type_: _description_
+        """
         self.GetPartyLevels()
         if self.enemyLevel > self.highestSeenLevel:
             self.highestSeenLevel = self.enemyLevel
@@ -318,7 +330,7 @@ class YellowEnv(Env):
             
     
     def rewardPosition(self):
-        """use this to generate reward based off the x/y coordinates of the current map
+        """checks to see if model is on a tile it hasn't reached before
         \nthis will convince it to explore new areas instead of stay in the current area
         Returns:
             int: Reward
@@ -337,7 +349,7 @@ class YellowEnv(Env):
     
     
     def rewardProgress(self):
-        """Rewards map progress in the game based off time taken to reach there 
+        """Checks to see if model is on a map that is on the correct path 
         \nhelps point models exploration in a designated direction
         
         Returns:
@@ -355,11 +367,7 @@ class YellowEnv(Env):
     
         
     def rewardPokemon(self):
-        """generates reward when catching a pokemon and additional reward if it is one of a few specific pokemon
-        \nthis is helpful to give it a chance at future progression requiring hms
-        
-        Returns:
-            int: Reward
+        """Checks to see if model has caught up to 6 pokemon
         """
         
         
@@ -383,13 +391,11 @@ class YellowEnv(Env):
     
     
     def rewardTrainers(self):
-        """use this to generate reward based off specific battles that need to be fought to progress the game
-        \nthis can help guide the model through the game by getting badges from gyms
-        \ncurrently just set to reward the model while gym battle music is playing
+        """Checks to see if gym battle music is playing
+
         Returns:
-            int: Reward
+            _type_: _description_
         """
-        #TODO add badge reward
         #for badges, all you have to do is check if the value has changed since last time, if so, reward it
         #there is no way to lose badges, so every change is when you gain a badge
         #D356 = Badges (Binary Switches)
@@ -402,6 +408,11 @@ class YellowEnv(Env):
         return False
     
     def BattleHandler(self):
+        """Checks game state during battles to evaluate for good model behavior
+
+        Returns:
+            _type_: _description_
+        """
         if self.rewardEnemyKO() or self.rewardEnemyDamage():
             return True
         if self.rewardSelfKO():
@@ -410,6 +421,11 @@ class YellowEnv(Env):
             return False
     
     def rewardEnemyKO(self):
+        """Checks if the enemy Pokemon has been knocked out
+
+        Returns:
+            _type_: _description_
+        """
         if self.enemyHP1Address + self.enemyHP2Address > 0:
             self.newEnemy = True
         if self.enemyHP1Address + self.enemyHP2Address == 0 and self.newEnemy == True:
@@ -421,6 +437,11 @@ class YellowEnv(Env):
             return True
         return False
     def rewardSelfKO(self):
+        """Checks if own Pokemon has been knocked out
+
+        Returns:
+            _type_: _description_
+        """
         #Checks if own Pokemon's current HP is greater than 0
         
         if self.pokemonHP1Address + self.pokemonHP2Address > 0:
@@ -437,6 +458,11 @@ class YellowEnv(Env):
         return False
     
     def rewardEnemyDamage(self):
+        """Checks if enemy has been damaged
+
+        Returns:
+            _type_: _description_
+        """
         enemyHP = self.enemyHP1Address + self.enemyHP2Address
         if enemyHP > self.enemyLowestHP:
             self.enemyLowestHP = enemyHP
@@ -449,6 +475,11 @@ class YellowEnv(Env):
         
     
     def IsBattleOver(self):
+        """Uses audio bank to check if there is a battle that is ongoing
+
+        Returns:
+            _type_: _description_
+        """
         if self.audioBankAddress == 8:
             False   
         else:
@@ -456,13 +487,19 @@ class YellowEnv(Env):
     
     
     def rewardConversation(self):
+        """Checks if model is talking to a new npc
+        """
+        #will be required for model to know to talk to the gym leader when it makes it to the gym
         return
     def rewardHealing(self):
+        """Checks if model is restoring health to a pokemon
+        """
+        #Might be useful to teach it not to push its Pokemon to death constantly
         return
     
         
     def GetPartyLevels(self):
-        """Generates reward based off highest ever party combined levels
+        """Gets the current level total of the party
         """
 
         self.levels = self.pokemonSlot1LevelAddress+self.pokemonSlot2LevelAddress+self.pokemonSlot3LevelAddress+self.pokemonSlot4LevelAddress
@@ -476,16 +513,12 @@ class YellowEnv(Env):
         """
         reward = 0
         
-        
-        
         if self.move2Address == 0:
             self.PPSlot2Address =1
         if self.move3Address == 0:
             self.PPSlot3Address =1
         if self.move4Address == 0:
             self.PPSlot4Address =1
-        
-        
         
         if (self.PPSlot1Address == 0 or self.PPSlot2Address == 0 or self.PPSlot3Address == 0 or self.PPSlot4Address == 0):
              reward -=1

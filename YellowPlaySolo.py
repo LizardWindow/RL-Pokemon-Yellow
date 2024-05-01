@@ -133,7 +133,5 @@ try:
         rewards.append(reward)
         
         clear_output(wait=True)
-        #plt.imshow(env.render())
-        #plt.show()
 finally:
     env.close()
