@@ -78,16 +78,24 @@ if __name__ == '__main__':
     INIT_STATE_FILE_PATH = stateFile #File location of the starting state of the rom
     PROGRESS_LOG = './logs/progressLogs/'
     
-    ep_length = 2048 *10 #episode length of training before env is truncated, needs to be a multiple of batch size, making a multiplier better for changing length
+    ep_length = 2048*10 #episode length of training before env is truncated, needs to be a multiple of batch size, making a multiplier better for changing length
     
     #sets up configurations for the environment
+    model_config = {
+        "Policy" : "CnnPolicy",
+        "Verbose" : 1,
+        "Number of Steps": ep_length,
+        "Batch size" : 128,
+        "Number of Epochs" : 1,
+        "Gamma" : 0.998,
+    }
+    
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
         'gb_path': ROM_PATH, 'max_steps': ep_length,
         'progressLogs': PROGRESS_LOG, 'batl_mult' : 1,
-        'expl_mult': 1
+        'expl_mult': 1, "head": 1, "model_config": model_config
     }
-    
     
     
     max = psutil.cpu_count()
@@ -104,7 +112,7 @@ if __name__ == '__main__':
     callback = TrainAndLoggingCallback(check_freq=ep_length, save_path=CHECKPOINT_DIR)
     
     #create reinforcement learning model
-    model = PPO('CnnPolicy', env, verbose=1, tensorboard_log=LOG_DIR,n_steps=ep_length//8, batch_size=128, n_epochs=1, gamma=0.998, )
+    model = PPO(model_config["Policy"], env, verbose=model_config["Verbose"], tensorboard_log=LOG_DIR,n_steps=model_config["Number of Steps"]//8, batch_size=model_config["Batch size"], n_epochs=model_config["Number of Epochs"], gamma=model_config["Gamma"], )
     #model= PPO.load('./train/current.zip', env=env)
     model.learn(total_timesteps=(ep_length ) *num_cpu*5000,callback = callback)
     #model.load('./train/best_model_55000.zip')

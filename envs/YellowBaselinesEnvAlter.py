@@ -9,7 +9,7 @@ from pyboy import PyBoy #Python based Gameboy Emulator
 from pyboy.utils import WindowEvent #Used for Pyboy functionality
 from gymnasium.utils import seeding #Used to generate a random seed
 from skimage.transform import resize #Used to resize pixel data in Render()
-from utilities.RewardTracker import RewardTracker #Tracks reward data for debugging
+from utilities.RewardTrackerAlter import RewardTracker #Tracks reward data for debugging
 class YellowEnv(Env):
     """Model for a Pokemon Yellow Gymnasium environment
 
@@ -100,11 +100,14 @@ class YellowEnv(Env):
         self.ranAway = 0
         self.teamAddresses = []
         self.enemyLevel = 1
+        self.battleEntered = False
+        self.battleDrawn = False
+        self.validMaps = [0,1,2,3,12,13,14,37,41,49,50,51,54,58,59,60,61]
         
         
         
         #used to track reward totals to better discover what the model is prioritizing
-        self.rewardTracker = RewardTracker(rank)
+        self.rewardTracker = RewardTracker(rank, config["model_config"])
         
         
     
@@ -145,15 +148,9 @@ class YellowEnv(Env):
     def reset(self, seed=None, options=None):
 
         super().reset(seed=seed)
-        self.rewardTracker.TrackerAdd((len(self.exploredMaps) - len(self.revisitedMaps)),"ME")
-        self.rewardTracker.TrackerAdd(self.ranAway, "RA")
-        self.rewardTracker.TrackerAdd(len(self.discoveredMaps)* len(self.discoveredMaps),"WP")
-        self.rewardTracker.TrackerAdd(-self.selfKOCount,"DR")
-        self.rewardTracker.TrackerAdd(self.enemyKOCount,"DD")
-        self.rewardTracker.TrackerAdd(self.levels,"PL")
-        self.rewardTracker.TrackerAdd(self.flagsReached,"FR")
-        self.rewardTracker.rewardTrackerPP = self.rewardTracker.rewardTrackerPP / self.PP0StepCount
-                
+        self.rewardTracker.tilesFound = len(self.exploredMaps)
+        
+        
         with open(self.init_state, "rb") as f:
             self.pyboy.load_state(f)
             self.pyboy.set_emulation_speed(0)
@@ -183,6 +180,8 @@ class YellowEnv(Env):
         self.teamAddresses = []
         self.highestSeenLevel = 1
         self.enemyLevel = 1
+        self.battleEntered = False
+        self.battleDrawn = False
         
         return self.render(), {}
     
@@ -270,28 +269,44 @@ class YellowEnv(Env):
     def reward(self):
         reward = 0
         if self.IsBattleOver():
+            if self.battleWon == False and self.battlelost == False and self.battleDrawn == False:
+                self.rewardTracker.battlesDrawn +=1
+                self.battleDrawn = True
+            self.battleEntered == False
             if self.rewardPosition() and self.rewardProgress():
                 reward = 1
             else: 
                 reward = 0
+            self.rewardTracker.explorationReward += reward
         else:
+            if self.battleEntered == False:
+                self.rewardTracker.battlesFought +=1
+            self.battleEntered = True
             if self.BattleHandler():
                 reward = 1
             else:
                 reward = 0
+            self.rewardTracker.battleReward += reward
         #TalkToNPCs
         #   Not sure how to do this yet
-        self.rewardPartyLevels()
-        #highest level pokemon seen
         
-        if self.enemyLevel > self.highestSeenLevel:
-            self.highestSeenLevel = self.enemyLevel
-        reward = reward * (self.highestSeenLevel / 100)
-        
+        reward = reward * self.GenerateModifier()   
+        self.rewardTracker.totalReward += reward
         return reward
         
         
-    
+    def GenerateModifier(self):
+        self.GetPartyLevels()
+        if self.enemyLevel > self.highestSeenLevel:
+            self.highestSeenLevel = self.enemyLevel
+        modifier = self.highestSeenLevel / 100
+        modifier += self.levels /100
+        modifier += len(self.discoveredMaps) /len(self.validMaps)
+        if self.rewardTrainers():
+            modifier = modifier * 2
+        self.rewardTracker.modifier = modifier
+        return modifier
+        
             
     
     def rewardPosition(self):
@@ -320,9 +335,12 @@ class YellowEnv(Env):
         Returns:
             int: Reward
         """
-        validMaps = [0,1,2,3,12,13,14,37,41,49,50,51,54,58,59,60,61]
+        self.rewardTracker.mapStepCount +=1
         #Checks if agent is currently in the next map target
-        if self.contains(validMaps, self.currentMapAddress):
+        if self.contains(self.validMaps, self.currentMapAddress):
+            self.discoveredMaps.append(self.currentMapAddress)
+            self.rewardTracker.visitedMaps.append(self.currentMapAddress)
+            self.rewardTracker.mapTotals[self.currentMapAddress] +=1
             return True
         return False
         
@@ -371,25 +389,27 @@ class YellowEnv(Env):
         #checks to see if agent is currently in a gym leader battle. This reward is far too high for long term growth
         #as it is given every step, but will be fine for my current purpose of getting the agent to the gym
         if self.gymMusicPlayingAddress > 0:
-            reward +=1
-        self.rewardTracker.TrackerAdd(reward, "T")
-        return reward
+            return True
+        #self.rewardTracker.TrackerAdd(reward, "T")
+        return False
     
     def BattleHandler(self):
-        if self.newBattlePokemon == False or self.newEnemy == False:
-            return False
-        if self.rewardEnemyDamage() or self.rewardEnemyKO():
+        if self.rewardEnemyKO() or self.rewardEnemyDamage():
             return True
         if self.rewardSelfKO():
+            return False
+        if self.newBattlePokemon == False or self.newEnemy == False:
             return False
     
     def rewardEnemyKO(self):
         if self.enemyHP1Address + self.enemyHP2Address > 0:
-            self.newEnemy == True
+            self.newEnemy = True
         if self.enemyHP1Address + self.enemyHP2Address == 0 and self.newEnemy == True:
             self.newEnemy = False
             self.battlelost = False
+            self.battleDrawn = False
             self.battleWon = True
+            self.rewardTracker.battlesWon +=1
             return True
         return False
     def rewardSelfKO(self):
@@ -400,10 +420,11 @@ class YellowEnv(Env):
         
         if self.pokemonHP1Address + self.pokemonHP2Address == 0 and self.newBattlePokemon:
             self.selfKOCount +=1
-            self.rewardTracker.knockedOut += 1
             self.battlelost = True
             self.battleWon = False
+            self.battleDrawn = False
             self.newBattlePokemon = False
+            self.rewardTracker.battlesLost +=1
             return True
         return False
     
@@ -414,6 +435,7 @@ class YellowEnv(Env):
             return False
         if enemyHP < self.enemyLowestHP:
             self.enemyLowestHP = enemyHP
+            self.rewardTracker.attacksMade +=1
             return True
         return False
         
@@ -431,18 +453,12 @@ class YellowEnv(Env):
         return
     
         
-    def rewardPartyLevels(self):
+    def GetPartyLevels(self):
         """Generates reward based off highest ever party combined levels
-        Returns:
-            int: Reward
         """
-        reward = 0
 
         self.levels = self.pokemonSlot1LevelAddress+self.pokemonSlot2LevelAddress+self.pokemonSlot3LevelAddress+self.pokemonSlot4LevelAddress
         +self.pokemonSlot5LevelAddress+self.pokemonSlot6LevelAddress
-        reward = self.levels
-        
-        return reward
     
     def rewardPP(self):
         """use this to generate negative reward for trying to use moves that run out of pp
