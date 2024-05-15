@@ -71,8 +71,8 @@ class YellowEnv(Env):
         self.explorationMultiplier = config['expl_mult']
         self.battleMultiplier = config['batl_mult']
         self.step_count = 0
-        self.exploredMaps = [(0,(0,0))]
-        self.revisitedMaps = [(0,(0,0))]
+        self.exploredMaps = set()
+        self.revisitedMaps = set((0,(0,0)))
         self.lastCoordinates = (0,(0,0))
         self.caughtPokemon = []
         self.gotParcel = False
@@ -94,7 +94,7 @@ class YellowEnv(Env):
         self.flagsReached = 0
         
         self.levels = 0
-        self.discoveredMaps = []
+        self.discoveredMaps = set()
         self.selfKOCount = 0
         self.enemyKOCount = 0
         self.ranAway = 0
@@ -155,8 +155,8 @@ class YellowEnv(Env):
             self.pyboy.load_state(f)
             self.pyboy.set_emulation_speed(0)
         self.step_count = 0
-        self.exploredMaps = [(0,(0,0))]
-        self.revisitedMaps = [(0,(0,0))]
+        self.exploredMaps = set()
+        self.revisitedMaps = set()
         self.lastCoordinates = (0,(0,0))
         self.caughtPokemon = []
         self.gotParcel = False
@@ -169,7 +169,7 @@ class YellowEnv(Env):
             self.rewardTracker.TrackerReset(self.resets)
         self.levelTotal = 0
         self.mapProgress = 0
-        self.discoveredMaps = []
+        self.discoveredMaps = set()
         self.selfKOCount = 0
         self.enemyKOCount = 0
         self.ranAway = 0
@@ -280,7 +280,7 @@ class YellowEnv(Env):
             if self.battleWon == False and self.battlelost == False and self.battleDrawn == False:
                 self.rewardTracker.battlesDrawn +=1
                 self.battleDrawn = True
-            self.battleEntered == False
+            self.battleEntered = False
             if self.rewardPosition() and self.rewardProgress():
                 reward = 1
             else: 
@@ -342,8 +342,8 @@ class YellowEnv(Env):
         
         
         #Checks if agent has been on this tile before
-        if self.contains(self.exploredMaps, currentLocation) != True:
-            self.exploredMaps.append(currentLocation)
+        if currentLocation not in self.exploredMaps:
+            self.exploredMaps.add(currentLocation)
             return True
         return False
     
@@ -357,9 +357,9 @@ class YellowEnv(Env):
         """
         self.rewardTracker.mapStepCount +=1
         #Checks if agent is currently in the next map target
-        if self.contains(self.validMaps, self.currentMapAddress):
-            if self.contains(self.discoveredMaps,self.currentMapAddress) != True:
-                self.discoveredMaps.append(self.currentMapAddress)
+        if self.currentMapAddress in self.validMaps:
+            if self.currentMapAddress not in self.discoveredMaps:
+                self.discoveredMaps.add(self.currentMapAddress)
             self.rewardTracker.mapTotals[self.currentMapAddress] +=1
             return True
         return False
@@ -399,7 +399,6 @@ class YellowEnv(Env):
         #for badges, all you have to do is check if the value has changed since last time, if so, reward it
         #there is no way to lose badges, so every change is when you gain a badge
         #D356 = Badges (Binary Switches)
-        reward = 0
         #checks to see if agent is currently in a gym leader battle. This reward is far too high for long term growth
         #as it is given every step, but will be fine for my current purpose of getting the agent to the gym
         if self.gymMusicPlayingAddress > 0:
@@ -558,17 +557,3 @@ class YellowEnv(Env):
         """
         self.pyboy.stop()
         super().close()
-    def contains(self, list, variable):
-        """Checks to see if a variable is contained in a list
-
-        Args:
-            list (_type_): _description_
-            variable (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        for i in list:
-            if i == variable:
-                return True
-        return False

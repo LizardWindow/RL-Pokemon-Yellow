@@ -1,0 +1,91 @@
+
+---------------------------------------------------------
+---------------------------------------------------------
+Process Number: 11
+Date/time = time.struct_time(tm_year=2024, tm_mon=5, tm_mday=13, tm_hour=8, tm_min=12, tm_sec=14, tm_wday=0, tm_yday=134, tm_isdst=1)
+Map Time Percentages
+Pallet Town: 10.905349794238683%
+Viridian City: 60.288065843621396%
+Pewter City: 0.0%
+Cerulean City: 0.0%
+Route 1: 9.77366255144033%
+Route 2: 15.329218106995885%
+Route 3: 0.0%
+Red's House: F1: 1.131687242798354%
+Pokemon Center: Viridian: 0.0%
+Gate: Route 2: 0.0%
+Gate: Route 2, North: 0.0%
+Viridian Forest: 0.0%
+Pewter Gym: 0.0%
+Pokemon Center: Pewter: 0.0%
+Mt. Moon, Entrance: 0.0%
+Mt. Moon, Somewhere: 0.0%
+Mt. Moon, Somewhere else: 0.0%
+---------------------------------------------------------
+Current Reset: 30
+Best Run Reset: 12
+---------------------------------------------------------
+Model Settings:
+
+Policy: CnnPolicy
+Verbose: 1
+Number of Steps: 20480
+Batch size: 512
+Number of Epochs: 3
+Gamma: 0.998
+Learning Rate: 0.0003
+---------------------------------------------------------
+
+Current Run Stats:
+
+Battles Fought: 2
+Battles Lost: 0
+Battles Won: 2
+Battles Drawn: 1
+Attacks Made: 5
+Tiles Found: 972
+Total Reward: 516.7400000000049
+Exploration Reward: 947
+Battle Reward: 7
+Reward Modifier: 0.6041176470588235
+---------------------------------------------------------
+First Run Stats:
+
+Battles Fought: 2
+Battles Lost: 0
+Battles Won: 2
+Battles Drawn: 1
+Attacks Made: 5
+Tiles Found: 781
+Total Reward: 398.8370588235307
+Exploration Reward: 742
+Battle Reward: 7
+Reward Modifier: 0.6041176470588235
+---------------------------------------------------------
+Best Run Stats:
+
+Battles Fought: 126
+Battles Lost: 9
+Battles Won: 117
+Battles Drawn: 1
+Attacks Made: 238
+Tiles Found: 1165
+Total Reward: 1183.5158823529507
+Exploration Reward: 1156
+Battle Reward: 355
+Reward Modifier: 0.961764705882353
+---------------------------------------------------------
+Average Run Stats:
+
+Battles Fought: 52.56666666666667
+Battles Lost: 3.4
+Battles Won: 50.63333333333333
+Battles Drawn: 1.0
+Attacks Made: 122.1333333333333
+Tiles Found: 1000.7666666666667
+Total Reward: 758.4418431372566
+Exploration Reward: 975.4333333333333
+Battle Reward: 172.76666666666668
+Reward Modifier: 0.7926274509803921
+---------------------------------------------------------
+---------------------------------------------------------

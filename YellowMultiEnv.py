@@ -85,17 +85,17 @@ if __name__ == '__main__':
         "Policy" : "CnnPolicy",
         "Verbose" : 1, #Level of debug messages to be shown in the console
         "Number of Steps": ep_length, #Number of steps before triggering the gradient
-        "Batch size" : 512, #Size of the gradient
+        "Batch size" : 128, #Size of the gradient
         "Number of Epochs" : 3, #Number of passes through the gradient
         "Gamma" : 0.998, #Discount Factor used by some calculations in 
-        "Learning Rate" : 0.0003 #Speed at which model learns
+        "Learning Rate" : 0.00001 #Speed at which model learns
     }
     
     env_config = {
         'action_freq': 24, 'init_state': INIT_STATE_FILE_PATH,
         'gb_path': ROM_PATH, 'max_steps': ep_length,
         'progressLogs': PROGRESS_LOG, 'batl_mult' : 1,
-        'expl_mult': 1, "head": 4, "model_config": model_config
+        'expl_mult': 1, "head": 1, "model_config": model_config
     }
     
     
@@ -114,6 +114,7 @@ if __name__ == '__main__':
     
     #create reinforcement learning model
     
+    '''
     model = PPO( #Proximal Policy Optimization, Reinforcement learning algorithm
         model_config["Policy"], 
         env, 
@@ -124,6 +125,6 @@ if __name__ == '__main__':
         n_epochs=model_config["Number of Epochs"], 
         gamma=model_config["Gamma"], 
         learning_rate=model_config["Learning Rate"])
-    
-    #model= PPO.load('./train/current.zip', env=env)
+    ''' 
+    model= PPO.load('./train/model60.zip', env=env)
     model.learn(total_timesteps=(ep_length ) *num_cpu*5000,callback = callback)

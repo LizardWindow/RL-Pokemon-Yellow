@@ -153,6 +153,17 @@ class RewardTracker:
         progressLog.write("\n---------------------------------------------------------")
         for k, v in self.mapTotals.items():
                 self.mapTotals[k] = 0
+        self.mapStepCount = 0
+        self.battlesFought=0
+        self.battlesLost=0
+        self.battlesWon=0
+        self.battlesDrawn=0
+        self.attacksMade=0
+        self.tilesFound =0
+        self.totalReward=0
+        self.explorationReward=0
+        self.battleReward=0
+        self.modifier =0
                 
         
     
@@ -195,7 +206,6 @@ class RewardTracker:
                 self.bestRun[k] = self.currentRun[k]
                 
         if resets == 1:
-            self.fvisitedMaps = self.visitedMaps
             for k, v in self.firstRun.items():
                 self.firstRun[k] = self.currentRun[k]
         
