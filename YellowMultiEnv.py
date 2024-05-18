@@ -126,5 +126,5 @@ if __name__ == '__main__':
         gamma=model_config["Gamma"], 
         learning_rate=model_config["Learning Rate"])
     ''' 
-    model= PPO.load('./train/model60.zip', env=env)
+    model= PPO.load('./train/model37.zip', env=env)
     model.learn(total_timesteps=(ep_length ) *num_cpu*5000,callback = callback)
