@@ -104,6 +104,12 @@ class YellowEnv(Env):
         self.battleDrawn = False
         self.validMaps = [0,1,2,3,12,13,14,37,41,49,50,51,54,58,59,60,61]
         
+        self.rewardStats = {
+            "Tiles Found" : 0,
+            "Highest Enemy Level" : 0,
+            "Total Levels" : 0
+        }
+        
         
         
         #used to track reward totals to better discover what the model is prioritizing
@@ -184,7 +190,13 @@ class YellowEnv(Env):
         self.battleWon = False
         self.battlelost = False
         
-        return self.render(), {}
+        self.rewardStats = {
+            "Tiles Found" : 0,
+            "Highest Enemy Level" : 0,
+            "Total Levels" : 0
+        }
+        
+        return self.render(), self.rewardStats
     
     def step(self,action):
         """Moves the environment forward using an action from the RL model, and returns outcome to the model
@@ -222,8 +234,14 @@ class YellowEnv(Env):
             truncated = True
             
         self.step_count += 1
+        
+        self.rewardStats = {
+            "Tiles Found" : len(self.exploredMaps),
+            "Highest Enemy Level" : self.highestSeenLevel,
+            "Total Levels" : self.levels
+        }
         #return obs_memory, new_reward, terminated, truncated, {}
-        return obs_memory, new_reward, terminated, truncated, {}
+        return obs_memory, new_reward, terminated, truncated, self.rewardStats
     
     def GetAddressValues(self):
         """Gets Values from required memory addresses

@@ -88,7 +88,7 @@ if __name__ == '__main__':
         "Batch size" : 128, #Size of the gradient
         "Number of Epochs" : 3, #Number of passes through the gradient
         "Gamma" : 0.998, #Discount Factor used by some calculations in 
-        "Learning Rate" : 0.00001 #Speed at which model learns
+        "Learning Rate" : 0.0003 #Speed at which model learns
     }
     
     env_config = {
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     
     #create reinforcement learning model
     
-    '''
+    #'''
     model = PPO( #Proximal Policy Optimization, Reinforcement learning algorithm
         model_config["Policy"], 
         env, 
@@ -127,4 +127,6 @@ if __name__ == '__main__':
         learning_rate=model_config["Learning Rate"])
     ''' 
     model= PPO.load('./train/model37.zip', env=env)
+    #''' 
+    #model= PPO.load('./train/model60.zip', env=env)
     model.learn(total_timesteps=(ep_length ) *num_cpu*5000,callback = callback)
