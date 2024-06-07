@@ -10,6 +10,9 @@ from pyboy.utils import WindowEvent #Used for Pyboy functionality
 from gymnasium.utils import seeding #Used to generate a random seed
 from skimage.transform import resize #Used to resize pixel data in Render()
 from utilities.RewardTrackerAlter import RewardTracker #Tracks reward data for debugging
+import os
+
+
 class YellowEnv(Env):
     """Model for a Pokemon Yellow Gymnasium environment
 
@@ -24,7 +27,7 @@ class YellowEnv(Env):
             rank (_type_): _Identification number for env when using multiple environments_
         """
         super(YellowEnv,self).__init__()
-        
+        os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
         #Creates an array of valid actions
         #had to temporarily remove the start button and pass to speed up learning
         #start will be required further into the game to teach hms and use items, but it is not required for the proof of concept leg
@@ -92,6 +95,7 @@ class YellowEnv(Env):
         self.pewterGym = False
         self.highestSeenLevel = 1
         self.flagsReached = 0
+        self.newTextLocations = set()
         
         self.levels = 0
         self.discoveredMaps = set()
@@ -103,6 +107,7 @@ class YellowEnv(Env):
         self.battleEntered = False
         self.battleDrawn = False
         self.validMaps = [0,1,2,3,12,13,14,37,41,49,50,51,54,58,59,60,61]
+        self.counter = 0
         
         self.rewardStats = {
             "Tiles Found" : 0,
@@ -176,6 +181,7 @@ class YellowEnv(Env):
         self.levelTotal = 0
         self.mapProgress = 0
         self.discoveredMaps = set()
+        self.newTextLocations = set()
         self.selfKOCount = 0
         self.enemyKOCount = 0
         self.ranAway = 0
@@ -189,11 +195,13 @@ class YellowEnv(Env):
         self.battleDrawn = False
         self.battleWon = False
         self.battlelost = False
-        
+        self.GetAddressValues()
         self.rewardStats = {
-            "Tiles Found" : 0,
-            "Highest Enemy Level" : 0,
-            "Total Levels" : 0
+            "Tiles Count" : len(self.exploredMaps),
+            "Tiles Found" : self.exploredMaps,
+            "Current Location" : (self.currentMapAddress,(self.xAddress, self.yAddress)),
+            "Highest Enemy Level" : self.highestSeenLevel,
+            "Total Levels" : self.levels
         }
         
         return self.render(), self.rewardStats
@@ -236,9 +244,12 @@ class YellowEnv(Env):
         self.step_count += 1
         
         self.rewardStats = {
-            "Tiles Found" : len(self.exploredMaps),
+            "Tiles Count" : len(self.exploredMaps),
+            "Tiles Found" : self.exploredMaps,
+            "Current Location" : self.currentLocation,
             "Highest Enemy Level" : self.highestSeenLevel,
-            "Total Levels" : self.levels
+            "Total Levels" : self.levels,
+            "Texts found" : self.newTextLocations
         }
         #return obs_memory, new_reward, terminated, truncated, {}
         return obs_memory, new_reward, terminated, truncated, self.rewardStats
@@ -286,7 +297,27 @@ class YellowEnv(Env):
         self.move4Address = self.pyboy.get_memory_value(0xD01E)
         self.oaksParcelAddress = self.pyboy.get_memory_value(0XD60C) #contains flag for if player has obtained oak's parcel or not
         self.enemyLevel = self.pyboy.get_memory_value(0xCFF2)
-    
+        self.fieldTextboxOpen = self.pyboy.get_memory_value(0xcfc3)
+        self.test2 = self.pyboy.get_memory_value(0xC506)
+        self.test3 = self.pyboy.get_memory_value(0xC507)
+        
+        mapCoordinates = self.xAddress, self.yAddress
+        self.currentLocation = (self.currentMapAddress,(mapCoordinates))
+        
+        
+        if self.counter == 0:
+            self.firstTest1 = self.fieldTextboxOpen
+            self.firstTest2 = self.test2
+            self.firstTest3 = self.test3
+        
+        if self.counter > 0:
+            if self.fieldTextboxOpen != self.firstTest1:
+                bob = 1#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if self.test2 != self.firstTest2:
+                bob = 2
+            if self.test3 != self.firstTest3:
+                bob = 3
+        self.counter += 1
     def reward(self):
         """Generates reward for the model based off of battle or exploration conditions
 
@@ -303,6 +334,11 @@ class YellowEnv(Env):
                 reward = 1
             else: 
                 reward = 0
+            if self.rewardConversation():
+                reward += 1
+            else: 
+                reward += 0
+            
             self.rewardTracker.explorationReward += reward
         else:
             if self.battleEntered == False:
@@ -355,13 +391,13 @@ class YellowEnv(Env):
         """
         
         #TODO instead of checking through this single list of touples, turn it into a multidimensional list to save on processing time as the model gets further into the game
-        mapCoordinates = self.xAddress, self.yAddress
-        currentLocation = (self.currentMapAddress,(mapCoordinates))
+        
+        (self.currentMapAddress,(self.xAddress, self.yAddress))
         
         
         #Checks if agent has been on this tile before
-        if currentLocation not in self.exploredMaps:
-            self.exploredMaps.add(currentLocation)
+        if self.currentLocation not in self.exploredMaps:
+            self.exploredMaps.add(self.currentLocation)
             return True
         return False
     
@@ -507,7 +543,11 @@ class YellowEnv(Env):
         """Checks if model is talking to a new npc
         """
         #will be required for model to know to talk to the gym leader when it makes it to the gym
-        return
+        if self.fieldTextboxOpen > 0:
+            if self.currentLocation not in self.newTextLocations:
+                self.newTextLocations.add(self.currentLocation)
+                return True
+        return False
     def rewardHealing(self):
         """Checks if model is restoring health to a pokemon
         """

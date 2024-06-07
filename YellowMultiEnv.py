@@ -11,6 +11,7 @@ from stable_baselines3 import PPO
 from gymnasium.envs.registration import register
 from envs.YellowBaselinesEnvAlter import YellowEnv
 import psutil
+import os
 
 from utilities.BaselinesCallback import TrainAndLoggingCallback
 
@@ -42,7 +43,7 @@ def make_env(env_config, rank, seed=0):
 #Needed to avoid some issues with multiprocessing once I get back to trying to run multiple environments
 if __name__ == '__main__':
     
-
+    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
     #Registers env with gym so that A2C can see it. (You wouldn't believe how long I spent just trying to find the exact file structure and naming to make this work)
     #Turns out, while this was very useful for creating a single gym environment, it was counterproductive to creating multiple environments.
     #Since I'm only ever going to be looking at one environment, it is better to declare the environment in a custom constructor that can be looped through
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     )
     
     #Variable to choose starting state of the game
-    fileChoice = 7
+    fileChoice = 8
     if fileChoice == 0:
         stateFile = "./states/CatchingTutorial.gb.state"
     elif fileChoice == 1:
@@ -71,6 +72,8 @@ if __name__ == '__main__':
         stateFile = "./states/TeamCaughtLeveled.state"
     elif fileChoice == 7:
         stateFile = "./states/noBaldMen.state"
+    elif fileChoice == 8:
+        stateFile = "./states/NoPikachu.state"
     else:
         stateFile = "./states/PokemonYellowVersion.gb.state"
     #setup directories
@@ -100,7 +103,7 @@ if __name__ == '__main__':
     
     
     max = psutil.cpu_count()
-    num_cpu = max
+    num_cpu = 1
     #Use DummyVecEnc whenever you need to troubleshoot, similar requirements but subproc is a lot more vague on exceptions
     env = SubprocVecEnv([make_env(env_config,i) for i in range(num_cpu)])
     #env = DummyVecEnv([make_env(env_config,i) for i in range(num_cpu)])
